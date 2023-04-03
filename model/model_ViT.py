@@ -165,7 +165,7 @@ class Encoder_Block(nn.Module):
                 norm_layer=nn.LayerNorm):
         super(Encoder_Block, self).__init__()
         self.norm1 = norm_layer(dim)
-        self.attn = Attention(dim, num_heads=num_heads, qkv_bias=qkv_bias, qk_scale=qk_scale,
+        self.attn = Attention(dim,num_heads=num_heads, qkv_bias=qkv_bias, qk_scale=qk_scale,
                                 attn_drop_ratio=attn_drop_ratio, proj_drop_ratio=drop_ratio)
         # drop path for stochastic depth, we shall see if this is better than dropout here
         self.drop_path = DropPath(drop_path_ratio) if drop_path_ratio > 0. else nn.Identity()
@@ -173,6 +173,7 @@ class Encoder_Block(nn.Module):
         self.mlp = MLP_Block(in_features=dim, hidden_features=int(dim * mlp_ratio), act_layer=act_layer, drop=drop_ratio)
 
     def forward(self, x):
+        # attention前，加入LayerNorm
         x = x + self.drop_path(self.attn(self.norm1(x)))
         x = x + self.drop_path(self.mlp(self.norm2(x)))
         return x
@@ -218,16 +219,16 @@ class VisionTransformer(nn.Module):
         super(VisionTransformer, self).__init__()
         self.num_classes = num_classes
         self.num_features = self.embed_dim = embed_dim  # num_features for consistency with other models
-        self.num_tokens = 1
+        self.num_clstokens = 1
         norm_layer = norm_layer or partial(nn.LayerNorm, eps=1e-6)  # LayerNorm: 对每单个batch进行的归一化
         act_layer = act_layer or nn.GELU
         # 拆分成patch
-        self.patch_embed = embed_layer(img_size=img_size, patch_size=patch_size, in_channel=in_channel, embed_dim=embed_dim)
-        num_patches = self.patch_embed.num_patches
+        self.patch_embedding = embed_layer(img_size=img_size, patch_size=patch_size, in_channel=in_channel, embed_dim=embed_dim)
+        num_patches = self.patch_embedding.num_patches
         # 创建可训练的class_token参数
         self.cls_token = nn.Parameter(torch.zeros(1, 1, embed_dim))  # 第一个1代表batch_size维度
         # 创建可训练的position_embedding参数
-        self.pos_embed = nn.Parameter(torch.zeros(1, num_patches + self.num_tokens, embed_dim))
+        self.pos_embedding = nn.Parameter(torch.zeros(1, num_patches + self.num_clstokens, embed_dim))
         self.pos_drop = nn.Dropout(p=drop_ratio)
         # Encoder Block中drop_out/drop_path方法使用的drop参数是递增的
         dpr = [x.item() for x in torch.linspace(0, drop_path_ratio, depth)]  # stochastic depth decay rule
@@ -253,23 +254,24 @@ class VisionTransformer(nn.Module):
             self.pre_logits = nn.Identity()
         # Classifier FC_last(s): 最后分类的全连接层
         self.FC_last = nn.Linear(self.num_features, num_classes) if num_classes > 0 else nn.Identity()
+        
         # Weight init: 权重初始化
         nn.init.trunc_normal_(self.cls_token, std=0.02)
-        nn.init.trunc_normal_(self.pos_embed, std=0.02)
+        nn.init.trunc_normal_(self.pos_embedding, std=0.02)
         self.apply(_init_vit_weights)
 
     def forward(self, x):
         # [B, C, H, W] -> [B, num_patches, embed_dim]
         # [B,3,224,224] -> [B,196,768]
-        x = self.patch_embed(x)  # [B, 196, 768]
+        x = self.patch_embedding(x)  # [B, 196, 768]
         # [1,1,768] -> [B,1,768]: 在batch_size维度扩展至batch_size份
         cls_token = self.cls_token.expand(x.shape[0], -1, -1)
-        # 加上类别token
+        # 加入cls token
         # [B,196,768] -> [B,197,768]
         x = torch.cat((cls_token, x), dim=1)  # [B, 197, 768]
         # 加上位置编码
         # [B,197,768] -> [B,197,768]
-        x = self.pos_drop(x + self.pos_embed)
+        x = self.pos_drop(x + self.pos_embedding)
         # [B,196,768] -> [B,197,768]
         x = self.Encoder_Block_List(x)
         x = self.norm(x)

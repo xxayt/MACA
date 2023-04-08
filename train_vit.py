@@ -6,7 +6,7 @@ import datetime
 import torch
 import torch.optim as optim
 import torch.optim.lr_scheduler as lr_scheduler
-from torch.utils.tensorboard import SummaryWriter
+# from torch.utils.tensorboard import SummaryWriter
 from torchvision import transforms
 from timm.utils import accuracy, AverageMeter
 
@@ -22,25 +22,25 @@ from vit.utils.utils import *
 def parse_option():
     parser = argparse.ArgumentParser('ViT training and evaluation script', add_help=False)
     parser.add_argument('--name', required=True, type=str, help='create model name')
-    parser.add_argument('--save_dir', default='./outputs', type=str)
-    parser.add_argument('--device_name', type=str, help='torch.cuda.get_device_name(0)')
+    parser.add_argument('--save_dir', default='./logs', type=str)
+    parser.add_argument('--device_name', type=str, default='torch.cuda.get_device_name(0)')
+    parser.add_argument('--pretrain_dir', type=str, default='./vit/pretrain')
     # data
-    parser.add_argument('--data', default='inat21_mini', type=str, help='inat21_mini|inat21_full')
-    parser.add_argument('--data_dir', type=str, default="./data")
+    parser.add_argument('--data', default='cifar100', type=str, help='inat21_mini|inat21_full')
+    parser.add_argument('--data_dir', type=str, default="./data/cifar100")
     parser.add_argument('--num_classes', type=int, default=100)
     # train
     parser.add_argument('--epochs', type=int, default=100)
-    parser.add_argument('--batch-size', type=int, default=128)
+    parser.add_argument('--batch_size', type=int, default=128)
     parser.add_argument('--lr', type=float, default=0.001)
     parser.add_argument('--lrf', type=float, default=0.01)
     parser.add_argument('--num_workers', default=8, type=int)
     # model
     # 预训练权重路径，如果不想载入就设置为空字符
-    parser.add_argument('--pretrain', type=str, default='.pretrain/vit/vit_base_patch16_224_in21k.pth',
-                        help='initial pretrain path')
-    parser.add_argument('--model_file', default='model_ViT', type=str, help='model file name')
-    parser.add_argument('--model_name', default='vit_base_patch32_224_ImageNet21k', type=str, help='model type in detail')
-    parser.add_argument('--resume', default='Latest', type=str, help='path to Latest checkpoint (default: none)')
+    parser.add_argument('--pretrain', type=str, default='vit_base_patch16_224_in21k.pth')
+    parser.add_argument('--model_file', type=str, default='model_ViT')
+    parser.add_argument('--model_name', type=str, default='vit_base_patch32_224_ImageNet21k', help='model type in detail')
+    parser.add_argument('--resume', type=str, default='Latest', help='path to Latest checkpoint (default: none)')
     # 是否冻结权重
     parser.add_argument('--freeze_layers', type=bool, default=True)
     args = parser.parse_args()
@@ -79,53 +79,7 @@ def main(args):
     lf = lambda x: ((1 + math.cos(x * math.pi / args.epochs)) / 2) * (1 - args.lrf) + args.lrf  # cosine
     scheduler = lr_scheduler.LambdaLR(optimizer, lr_lambda=lf)
 
-    if os.path.exists("./pretrain") is False:
-        os.makedirs("./pretrain")
-
-    tb_writer = SummaryWriter()
-    '''
-    train_images_path, train_images_label, val_images_path, val_images_label = read_split_data(args.data_path)
-
-    data_transform = {
-        "train": transforms.Compose([transforms.RandomResizedCrop(224),
-                                    transforms.RandomHorizontalFlip(),
-                                    transforms.ToTensor(),
-                                    transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])]),
-        "val": transforms.Compose([transforms.Resize(256),
-                                    transforms.CenterCrop(224),
-                                    transforms.ToTensor(),
-                                    transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])])}
-
-    # 实例化训练数据集
-    train_dataset = MyDataSet(images_path=train_images_path,
-                              images_class=train_images_label,
-                              transform=data_transform["train"])
-
-    # 实例化验证数据集
-    val_dataset = MyDataSet(images_path=val_images_path,
-                            images_class=val_images_label,
-                            transform=data_transform["val"])
-
-    batch_size = args.batch_size
-    nw = min([os.cpu_count(), batch_size if batch_size > 1 else 0, 8])  # number of workers
-    print('Using {} dataloader workers every process'.format(nw))
-    train_loader = torch.utils.data.DataLoader(train_dataset,
-                                                batch_size=batch_size,
-                                                shuffle=True,
-                                                pin_memory=True,
-                                                num_workers=nw,
-                                                collate_fn=train_dataset.collate_fn)
-
-    val_loader = torch.utils.data.DataLoader(val_dataset,
-                                            batch_size=batch_size,
-                                            shuffle=False,
-                                            pin_memory=True,
-                                            num_workers=nw,
-                                            collate_fn=val_dataset.collate_fn)
-    
-    batch_size = args.batch_size
-    model = create_model(num_classes=args.num_classes, has_logits=False)
-    '''
+    # tb_writer = SummaryWriter()
     if args.pretrain != "":
         assert os.path.exists(args.pretrain), "pretrain file: '{}' not exist.".format(args.pretrain)
         weights_dict = torch.load(args.pretrain)
@@ -201,12 +155,12 @@ def main(args):
             save_checkpoint(epoch, model, optimizer, max_accuracy, args, logger, save_name='Best')
         logger.info('Exp path: %s' % args.path_log)
 
-        tags = ["train_loss", "train_acc", "val_loss", "val_acc", "learning_rate"]
-        tb_writer.add_scalar(tags[0], train_loss, epoch)
-        tb_writer.add_scalar(tags[1], train_acc, epoch)
-        tb_writer.add_scalar(tags[2], val_loss, epoch)
-        tb_writer.add_scalar(tags[3], val_acc, epoch)
-        tb_writer.add_scalar(tags[4], optimizer.param_groups[0]["lr"], epoch)
+        # tags = ["train_loss", "train_acc", "val_loss", "val_acc", "learning_rate"]
+        # tb_writer.add_scalar(tags[0], train_loss, epoch)
+        # tb_writer.add_scalar(tags[1], train_acc, epoch)
+        # tb_writer.add_scalar(tags[2], val_loss, epoch)
+        # tb_writer.add_scalar(tags[3], val_acc, epoch)
+        # tb_writer.add_scalar(tags[4], optimizer.param_groups[0]["lr"], epoch)
     # 总时间
     total_time = time.time() - start_time
     total_time_str = str(datetime.timedelta(seconds=int(total_time)))

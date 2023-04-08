@@ -11,6 +11,7 @@ example/
 
 # outputs
 outputs/
+logs/
 # **/*.pth
 
 # checkpoints

@@ -1,5 +1,5 @@
 # dataset
-datasets/
+./datasets/
 data/
 !datasets/.README.md
 

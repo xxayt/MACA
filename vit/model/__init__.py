@@ -1,2 +1,2 @@
 # from .build import build_model
-from model_ViT import *
+from .model_ViT import *

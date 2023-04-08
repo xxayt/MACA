@@ -183,7 +183,7 @@ class VisionTransformer(nn.Module):
     def __init__(self, img_size=224,
                 patch_size=16, 
                 in_channel=3, 
-                num_classes=1000,
+                num_classes=100,
                 embed_dim=768, 
                 depth=12, 
                 num_heads=12, 
@@ -253,7 +253,7 @@ class VisionTransformer(nn.Module):
             self.has_logits = False
             self.pre_logits = nn.Identity()
         # Classifier FC_last(s): 最后分类的全连接层
-        self.FC_last = nn.Linear(self.num_features, num_classes) if num_classes > 0 else nn.Identity()
+        self.FC_last = nn.Linear(self.num_features, self.num_classes) if self.num_classes > 0 else nn.Identity()
         
         # Weight init: 权重初始化
         nn.init.trunc_normal_(self.cls_token, std=0.02)

@@ -1,7 +1,7 @@
 # dataset
 ./datasets/
 data/
-!datasets/.README.md
+!data/.README.md
 
 # __pycache__
 **/__pycache__
@@ -10,7 +10,8 @@ example/
 
 
 # outputs
-outputs/**/*.pth
+outputs/
+# **/*.pth
 
 # checkpoints
 .ipynb_checkpoints/

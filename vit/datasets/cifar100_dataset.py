@@ -3,7 +3,7 @@ import torch
 from torchvision.datasets import CIFAR100
 from torchvision import transforms
 from torch.utils.data import DataLoader
-from vit.config import *
+# from vit.config import *
 import os
 
 # CLASSES = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
@@ -30,13 +30,13 @@ transform= {
 # 加载数据
 def load_data(args):
     # CIFAR10数据集大小为32x32
-    train_data = CIFAR100(root=args.data_path,
+    train_data = CIFAR100(root=args.data_dir,
                           train=True,
-                          download=False,
+                          download=True,
                           transform=transform["train"])
-    test_data = CIFAR100(root=args.data_path,
+    test_data = CIFAR100(root=args.data_dir,
                          train=False,
-                         download=False,
+                         download=True,
                          transform=transform["val"])
     
     # 在转为tensor前,为PIL文件,可显示图片.即删除transform=transforms后才可显示

@@ -9,8 +9,10 @@ import torch.optim.lr_scheduler as lr_scheduler
 from torch.utils.tensorboard import SummaryWriter
 from torchvision import transforms
 from timm.utils import accuracy, AverageMeter
-import vit.model as model
-from vit.datasets.cifar_dataset import *
+
+# from vit.model import *
+import vit.model as model_ViT
+from vit.datasets.cifar100_dataset import load_data
 from vit.utils.utils import *
 
 # from my_dataset import MyDataSet
@@ -24,7 +26,7 @@ def parse_option():
     parser.add_argument('--device_name', type=str, help='torch.cuda.get_device_name(0)')
     # data
     parser.add_argument('--data', default='inat21_mini', type=str, help='inat21_mini|inat21_full')
-    parser.add_argument('--data_dir', type=str, default="/datasets/cifar100")
+    parser.add_argument('--data_dir', type=str, default="./data")
     parser.add_argument('--num_classes', type=int, default=100)
     # train
     parser.add_argument('--epochs', type=int, default=100)
@@ -34,10 +36,10 @@ def parse_option():
     parser.add_argument('--num_workers', default=8, type=int)
     # model
     # 预训练权重路径，如果不想载入就设置为空字符
-    parser.add_argument('--pretrain', type=str, default='./vit_base_patch16_224_in21k.pth',
+    parser.add_argument('--pretrain', type=str, default='.pretrain/vit/vit_base_patch16_224_in21k.pth',
                         help='initial pretrain path')
-    parser.add_argument('--model_file', default='ViT', type=str, help='model file name')
-    parser.add_argument('--model_name', default='vit_base_patch16_224_ImageNet21k', type=str, help='model type in detail')
+    parser.add_argument('--model_file', default='model_ViT', type=str, help='model file name')
+    parser.add_argument('--model_name', default='vit_base_patch32_224_ImageNet21k', type=str, help='model type in detail')
     parser.add_argument('--resume', default='Latest', type=str, help='path to Latest checkpoint (default: none)')
     # 是否冻结权重
     parser.add_argument('--freeze_layers', type=bool, default=True)
@@ -51,7 +53,7 @@ def main(args):
     creat_time = time.strftime("%Y%m%d-%H%M%S", time.localtime())  # 获取训练创建时间
     args.path_log = os.path.join(args.save_dir, f'{args.data}', f'{args.name}')  # 确定训练log保存路径
     os.makedirs(args.path_log, exist_ok=True)  # 创建训练log保存路径
-    logger = create_logging(os.path.join(args.path_log, '%s-%s-%s-train.log' % (creat_time, args.name, args.storeinfo)))  # 创建训练保存log文件
+    logger = create_logging(os.path.join(args.path_log, '%s-%s-train.log' % (creat_time, args.name)))  # 创建训练保存log文件
     
     # get datasets
     train_loader, val_loader, num_iter = load_data(args)
@@ -62,7 +64,7 @@ def main(args):
 
     # get net
     logger.info(f"Creating model:{args.model_file} -> {args.model_name}")
-    model = model.__dict__[args.model_file].__dict__[args.model_name](logger, args)  # 从mode_file中找到对应model_name的模型
+    model = model_ViT.__dict__[args.model_file].__dict__[args.model_name](logger, args)  # 从mode_file中找到对应model_name的模型
     model.cuda()
     model = torch.nn.DataParallel(model)
     # logger.info(model)  # 打印网络结构

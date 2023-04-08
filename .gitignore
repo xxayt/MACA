@@ -23,5 +23,4 @@ test.py
 
 # pdf
 *.pdf
-
-**/pretrain/
+*.bin

@@ -15,17 +15,48 @@
     pip install -i https://pypi.tuna.tsinghua.edu.cn/simple torch==1.7.1 torchvision==0.8.2
     ```
 
+2. Install others
+    ```
+    apt update
+    apt-get install tmux
+    apt-get install aria2c
+    ```
 
 
 ## Experiment
 
 所有实验均采用pre-train-and-fine-tune方案，本repo主要尝试将x类模型迁移学习到某些下游任务中
 
+- download pre-training weights:
+  ```
+  aria2c [pre-training weights url]
+  ```
+  
+
 ### 1 ViT
 
-- 介绍
-- 模型
-- 下游任务测试
+- **Introduction**：完全使用Transformer处理CV任务
+- **Model**：将输入图片拆分为patch通过linear embedding后，将flattened patch放入Transformer
+- **Pre-Training Weights**：
+  - [vit_base_patch32_224_ImageNet21k](https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-vitjx/jx_vit_base_patch32_224_in21k-8db57226.pth)
+  - [vit_large_patch16_224_ImageNet21k](https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-vitjx/jx_vit_large_patch16_224_in21k-606da67d.pth)
+- **Transfer Tasks**：
+  - cifar100
+    - dataset：[cifar100](http://www.cs.toronto.edu/~kriz/cifar-100-python.tar.gz)
+    - train
+      for vit_base_patch32_224_ImageNet21k
+      ```
+      python train_vit.py --name vit_base_32 --data 'cifar100' --model_file 'model_ViT' \
+      --model_name 'vit_base_patch32_224_ImageNet21k' --pretrain 'vit_base_patch32_224_in21k.pth' \
+      --batch_size 128 --lr 0.004
+      ```
+      for vit_large_patch16_224_ImageNet21k
+      ```
+      python train_vit.py --name vit_large_16 --data 'cifar100' --model_file 'model_ViT' \
+      --model_name 'vit_large_patch16_224_ImageNet21k' --pretrain 'vit_large_patch16_224_in21k.pth' \
+      --batch_size 32 --lr 0.004
+      ```
+    - test
 
 ### 2 ViLBERT
 

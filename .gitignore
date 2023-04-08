@@ -24,3 +24,4 @@ test.py
 # pdf
 *.pdf
 *.bin
+*.pth

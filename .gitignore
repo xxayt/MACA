@@ -1,2 +1,25 @@
+# dataset
 datasets/
+data/
+!datasets/.README.md
+
+# __pycache__
+**/__pycache__
+# example
+example/
+
+
+# outputs
+outputs/**/*.pth
+
+# checkpoints
+.ipynb_checkpoints/
+checkpoints/*.pth
+
+# test
+test.py
+
+# pdf
 *.pdf
+
+**/pretrain/

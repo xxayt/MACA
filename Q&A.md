@@ -244,7 +244,7 @@ $$
 
 ### 3.2.2 Self-Attention Variants
 
-<img src=".\image\multimodel self-attention.png" alt="multimodel self-attention" style="zoom:30%;" />
+<img src=".\image\multimodel self-attention.png" alt="multimodel self-attention" style="zoom:40%;" />
 
 1. **Early Sum(token-wise sum)**：在token input时进行加权和实现。
 
@@ -273,11 +273,17 @@ $$
 
 # 4 实验设想
 
+## 4.0 align方面
+
+> Q：主要关注点可以放在cross-attention的结构上，结合你提到的多模态里面重要的align这一个点，想一想可能存在的潜在的负面影响。
+
+
+
 ## 4.1 ViLBERT
 
 > 参考：[ViLBERT: Pretraining Task-Agnostic Visiolinguistic Representations for Vision-and-Language Tasks (2019)](https://arxiv.org/abs/1908.02265)
 
-<img src="D:\2Codefield\VS_code\python\Learn_Base\MACA\image\vilbert.png" alt="vilbert" style="zoom:60%;" />
+
 
 - 基于Cross-Attention结构，针对VLP任务
   - 先在Conceptual Captions数据集进行预训练，再迁移到下游的四个vision-language任务中，视觉问答、视觉常识推理、指示表达和基于字幕的图像检索。
@@ -285,24 +291,38 @@ $$
   - 高层语义信息也依赖于底层语义的可靠，诸如目前很多transformer在多模态的应用，如ViLBERT [1]，ERNIE-ViL [2]等，都依赖于词向量的可靠，然后才谈得上高层语义的可靠。[语义标签(Semantic label)与多模态模型的一些关系_FesianXu的博客-CSDN博客](https://blog.csdn.net/LoseInVain/article/details/114958239)
 - **我的实验目的**：原文进行了指定下游任务的迁移学习。我想对比之前的sota方法，通过查看迁移学习的复杂度和实现效果来检验cross-attention的优势。
 
-<img src=".\image\vilbert cross-attention.png" alt="vilbert cross-attention" style="zoom:50%;" />
 
-## 4.2 CrossViT
+
+## 4.2 ViLT
+
+> 参考：
+
+- 基于Early Concat结构，针对VLP任务：
+  - 
+
+## 4.3 CrossViT
 
 > 参考：[CrossViT: Cross-Attention Multi-Scale Vision Transformer for Image Classification (2021)](https://arxiv.org/abs/2103.14899)
-
-<img src=".\image\crossvit.png" alt="crossvit" style="zoom:40%;" />
 
 - 基于Cross-Attention结构，针对图像分类任务（单模态）：
 
   - 分别提取不同尺寸的patch特征，然后进行cross-attention融合（选择互换class token的方式）
 
-  <img src=".\image\crossvit cross-attention.png" alt="crossvit cross-attention" style="zoom:40%;" />
-
   - 创新原理（最终选择d方法）：patch小的时候，可提高性能，但需要更高的FLOPs和显存。因此可尝试双分支ViT在融合的想法（类似multi-stream to one-stream的Hierarchical Attention，只不过one-stream时换为cross-attention）。在将small patch通过transformer encoder输出的patch token（$x_{patch}^{s}$）与 large patch通过transformer encoder输出的class token（$x_{cls}^{l}$）做multi-head cross-attention，最后再使 $x_{patch}^{l}$ 与 $y_{cls}'^{l}$ 做concat
 
 
-<img src=".\image\crossvit fusion.png" alt="crossvit fusion" style="zoom:50%;" />
-
-
 - **我的实验目的**：原论文提出四种fusion方法。我想通过复现这四种方法，来更加熟悉attention的代码内容并具体比较不同fusion的各方面效果。
+
+
+
+
+
+<img src=".\image\vilbert.png" alt="vilbert" style="zoom:40%;" />
+
+<img src=".\image\vilbert cross-attention.png" alt="vilbert cross-attention" style="zoom:50%;" />
+
+<img src=".\image\crossvit.png" alt="crossvit" style="zoom:50%;" />
+
+<img src=".\image\crossvit cross-attention.png" alt="crossvit cross-attention" style="zoom:50%;" />
+
+<img src=".\image\crossvit fusion.png" alt="crossvit fusion" style="zoom:50%;" />

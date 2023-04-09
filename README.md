@@ -40,19 +40,38 @@
 
   
 
-### 1 ViT
+### 1 ViT $^{[3]}$
+
+tree only for ViT
 
 ```
-/MACA/vit# tree
+~/MACA# tree
 .
-├── cifar100_dataset.py
-├── model_rawvit.py
-├── model_ViT.py
-├── pretrain
-│   ├── README.md
-│   ├── vit_base_patch32_224_in21k.pth
-│   └── vit_large_patch16_224_in21k.pth
-└── utils.py
+├── data
+│   └── cifar100
+│       └── cifar-100-python
+│           ├── file.txt~
+│           ├── meta
+│           ├── test
+│           └── train
+├── logs
+│   └── cifar100
+│       └── vit_base_32..
+├── train_vit.py
+├── vit
+│   ├── cifar100_dataset.py
+│   ├── model_rawvit.py
+│   ├── model_ViT.py
+│   ├── pretrain
+│   │   ├── README.md
+│   │   ├── vit_base_patch32_224_in21k.pth
+│   │   └── vit_large_patch16_224_in21k.pth
+│   ├── __pycache__
+│   │   ├── cifar100_dataset.cpython-38.pyc
+│   │   ├── model_rawvit.cpython-38.pyc
+│   │   ├── model_ViT.cpython-38.pyc
+│   │   └── utils.cpython-38.pyc
+│   └── utils.py
 ```
 
 - **Introduction**：完全使用Transformer处理CV任务
@@ -74,14 +93,13 @@
 - **Transfer Tasks**：
   - cifar100
     - dataset：[cifar100](http://www.cs.toronto.edu/~kriz/cifar-100-python.tar.gz)
-    - train
-      for vit_base_patch32_224_ImageNet21k
+    - train for vit_base_patch32_224_ImageNet21k
       ```
       python train_vit.py --name vit_base_32 --data 'cifar100' --model_file 'model_ViT' \
       --model_name 'vit_base_patch32_224_ImageNet21k' --pretrain 'vit_base_patch32_224_in21k.pth' \
-      --batch_size 128 --lr 0.001
+      --batch_size 128 --lr 0.002
       ```
-      for vit_large_patch16_224_ImageNet21k
+      train for vit_large_patch16_224_ImageNet21k
       ```
       python train_vit.py --name vit_large_16 --data 'cifar100' --model_file 'model_ViT' \
       --model_name 'vit_large_patch16_224_ImageNet21k' --pretrain 'vit_large_patch16_224_in21k.pth' \
@@ -89,28 +107,54 @@
       ```
     - test
 
-### 2 ViLBERT
+### 2 ViLBERT $^{[7]}$
 
 - **Introduction**：
   - 第一个提出Co-Attention（即交换Attention中不同模态的query）的模态融合方法。
   - 在Conceptual Captions数据集上进行VLP；再迁移到下游的四个vision-language任务中（VQA、VCR、Grounding Referring Expressions、Caption-Based Image Retrieval）。
 - **Model**：
   - Textual Embedder：BERT
-  - Visual Embedder：Faster-CNN
+  - Visual Embedder：Faster-CNN ?
   - Modality Interaction：Co-Attention
+
+  <img src=".\image\vilbert.png" alt="vilbert" style="zoom:50%;" />
+
 - **Pre-Training Tasks**：
   1. masked multi-modal modelling
   2. multi-modal alignment prediction
+
+- **Pre-Training Weights**：
+
+  |       model       |                   Pre-train on ImageNet1k                    |                   Pre-train on ImageNet21k                   |
+  | :---------------: | :----------------------------------------------------------: | :----------------------------------------------------------: |
+  | ..  | .. | .. |
+
 - **Transfer Tasks**：
   - VQA
     - dataset：VQA 2.0（1.1 million questions about COCO images each with 10 answers）
   - VCR
+
   - Grounding Referring Expressions
     - dataset：RefCOCO+
+    - train
+      ```
+      CUDA_VISIBLE_DEVICES=0 python vilbert_train_tasks.py --bert_model bert-base-uncased --from_pretrained vilbert/pretrain/bert_base_6_layer_6_connect_freeze_0/pytorch_model_8.bin --config_file vilbert/config/bert_base_6layer_6conect.json  --learning_rate 4e-5 --num_workers 0 --tasks 4 --save_name pretrained
+      ```
+    - evaluation
+      ```
+      CUDA_VISIBLE_DEVICES=0 python vilbert_eval_tasks.py --bert_model bert-base-uncased --from_pretrained save/refcoco+_bert_base_6layer_6conect-pretrained/pytorch_model_19.bin --config_file config/bert_base_6layer_6conect.json --task 4
+      ```
+
   - Caption-Based Image Retrieval 基于标题的图像检索
     - dataset：Flickr30k（31,000 images from Flickr with five captions each）
-  - python ./tools/generate_tsv.py --cfg experiments/cfgs/faster_rcnn_end2end_resnet.yml --def models/vg/ResNet-101/faster_rcnn_end2end_final/test.prototxt --out feature/VCR/VCR_resnet101_faster_rcnn_genome.tsv --net data/faster_rcnn_models/resnet101_faster_rcnn_final.caffemodel --total_group 1 --group_id 0 --split VCR
-  - python train_tasks.py --bert_model bert-base-uncased --from_pretrained <multi_task_model_path> --config_file config/bert_base_6layer_6conect.json --tasks 1 --lr_scheduler 'warmup_linear' --train_iter_gap 4 --task_specific_tokens --save_name finetune_from_multi_task_model
+    - train
+      ```
+      CUDA_VISIBLE_DEVICES=0 python vilbert_train_tasks.py --bert_model bert-base-uncased --from_pretrained vilbert/pretrain/bert_base_6_layer_6_connect_freeze_0/pytorch_model_8.bin  --config_file vilbert/config/bert_base_6layer_6conect.json  --learning_rate 4e-5 --num_workers 0 --tasks 3 --save_name pretrained
+      ```
+    - evaluation
+      ```
+      CUDA_VISIBLE_DEVICES=0 python vilbert_eval_retrieval.py --bert_model bert-base-uncased --from_pretrained save/RetrievalFlickr30k_bert_base_6layer_6conect-pretrained/pytorch_model_19.bin --config_file config/bert_base_6layer_6conect.json --task 3 --split test --batch_size 1
+      ```
 
 ### 3 ViLT
 
@@ -128,11 +172,13 @@
 
 ## Reference
 
-1. [Attention Is All You Need (2017)](https://arxiv.org/abs/1706.03762)
-2. [An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale (2021)](https://arxiv.org/abs/2010.11929)
-3. [Multimodal Learning with Transformers: A Survey (2022)](https://arxiv.org/abs/2206.06488)
-4. [BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding (2018)](https://arxiv.org/abs/1810.04805)
-5. [ViLBERT: Pretraining Task-Agnostic Visiolinguistic Representations for Vision-and-Language Tasks (2019)](https://arxiv.org/abs/1908.02265)
-6. [ViLT: Vision-and-Language Transformer Without Convolution or Region Supervision (2021)](https://arxiv.org/abs/2102.03334)
-7. [CrossViT: Cross-Attention Multi-Scale Vision Transformer for Image Classification (2021)](https://arxiv.org/abs/2103.14899)
+- [1] [Attention Is All You Need (2017)](https://arxiv.org/abs/1706.03762)
+- [2] [An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale (2021)](https://arxiv.org/abs/2010.11929)
+- [3] [https://github.com/google-research/vision_transformer](https://github.com/google-research/vision_transformer)
+- [4] [Multimodal Learning with Transformers: A Survey (2022)](https://arxiv.org/abs/2206.06488)
+- [5] [BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding (2018)](https://arxiv.org/abs/1810.04805)
+- [6] [ViLBERT: Pretraining Task-Agnostic Visiolinguistic Representations for Vision-and-Language Tasks (2019)](https://arxiv.org/abs/1908.02265)
+- [7] [https://github.com/google-research/vision_transformer](https://github.com/google-research/vision_transformer)
+- [8] [ViLT: Vision-and-Language Transformer Without Convolution or Region Supervision (2021)](https://arxiv.org/abs/2102.03334)
+- [9] [CrossViT: Cross-Attention Multi-Scale Vision Transformer for Image Classification (2021)](https://arxiv.org/abs/2103.14899)
 

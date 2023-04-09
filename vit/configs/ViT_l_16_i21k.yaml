@@ -1,5 +1,0 @@
-DATA:
-  IMG_SIZE: 224
-MODEL:
-  TYPE: ViT
-  NAME: vit_large_patch16_224_ImageNet21k

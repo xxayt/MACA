@@ -19,6 +19,7 @@ logs/
 checkpoints/*.pth
 
 # test
+run.md
 test.py
 
 # pdf

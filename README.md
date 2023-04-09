@@ -23,7 +23,7 @@
     ```
 
 
-## Experiment
+## Experiment for fine-tune
 
 所有实验均采用pre-train-and-fine-tune方案，本repo主要尝试将x类模型迁移学习到某些下游任务中
 
@@ -32,14 +32,45 @@
   aria2c [pre-training weights url]
   ```
   
+- see acc/loss curve by tensorboard
+
+  ```
+  tensorboard --logdir ./logs/[path of tensorboard file]
+  ```
+
+  
 
 ### 1 ViT
 
+```
+/MACA/vit# tree
+.
+├── cifar100_dataset.py
+├── model_rawvit.py
+├── model_ViT.py
+├── pretrain
+│   ├── README.md
+│   ├── vit_base_patch32_224_in21k.pth
+│   └── vit_large_patch16_224_in21k.pth
+└── utils.py
+```
+
 - **Introduction**：完全使用Transformer处理CV任务
+
 - **Model**：将输入图片拆分为patch通过linear embedding后，将flattened patch放入Transformer
+
+  <img src=".\image\vit.png" alt="vit" style="zoom:40%;" />
+
 - **Pre-Training Weights**：
-  - [vit_base_patch32_224_ImageNet21k](https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-vitjx/jx_vit_base_patch32_224_in21k-8db57226.pth)
-  - [vit_large_patch16_224_ImageNet21k](https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-vitjx/jx_vit_large_patch16_224_in21k-606da67d.pth)
+  
+  |       model       |                   Pre-train on ImageNet1k                    |                   Pre-train on ImageNet21k                   |
+  | :---------------: | :----------------------------------------------------------: | :----------------------------------------------------------: |
+  | base-patch16-224  | [vit_base_patch16_224_in1k](https://pan.baidu.com/s/1zqb08naP0RPqqfSXfkB2EA), key: eu9f | [vit_base_patch16_224_in21k](https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-vitjx/jx_vit_base_patch16_224_in21k-e5005f0a.pth) |
+  | base-patch32-224  | [vit_base_patch32_224_in1k](https://pan.baidu.com/s/1hCv0U8pQomwAtHBYc4hmZg), key: s5hl | [vit_base_patch32_224_in21k](https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-vitjx/jx_vit_base_patch32_224_in21k-8db57226.pth) |
+  | large-patch16-224 | [vit_large_patch16_224_in1k](https://pan.baidu.com/s/1cxBgZJJ6qUWPSBNcE4TdRQ), key: qqt8 | [vit_large_patch16_224_in21k](https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-vitjx/jx_vit_large_patch16_224_in21k-606da67d.pth) |
+  | large-patch32-224 |                              /                               | [vit_large_patch32_224_in21k](https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-vitjx/jx_vit_large_patch32_224_in21k-9046d2e7.pth) |
+  | huge-patch14-224  |                              /                               |                   not currently availabel                    |
+  
 - **Transfer Tasks**：
   - cifar100
     - dataset：[cifar100](http://www.cs.toronto.edu/~kriz/cifar-100-python.tar.gz)

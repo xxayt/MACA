@@ -48,7 +48,7 @@
       ```
       python train_vit.py --name vit_base_32 --data 'cifar100' --model_file 'model_ViT' \
       --model_name 'vit_base_patch32_224_ImageNet21k' --pretrain 'vit_base_patch32_224_in21k.pth' \
-      --batch_size 128 --lr 0.004
+      --batch_size 128 --lr 0.001
       ```
       for vit_large_patch16_224_ImageNet21k
       ```

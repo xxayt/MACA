@@ -166,28 +166,30 @@ def train_one_epoch_local_data(train_loader, model, loss_function, optimizer, ep
     optimizer.zero_grad()
     scaler = torch.cuda.amp.GradScaler()  # 自动混合精度训练
     
-    accu_loss = torch.zeros(1).cuda(non_blocking=True)  # 累计损失
-    accu_num = torch.zeros(1).cuda(non_blocking=True)   # 累计预测正确的样本数
-    sample_num = 0
+    # accu_loss = torch.zeros(1).cuda(non_blocking=True)  # 累计损失
+    # accu_num = torch.zeros(1).cuda(non_blocking=True)   # 累计预测正确的样本数
+    # sample_num = 0
 
     num_steps = len(train_loader)
     batch_time = AverageMeter()
     loss_meter = AverageMeter()
+    acc1_meter = AverageMeter()
+    acc5_meter = AverageMeter()
     start = time.time()
     end = time.time()
     for iter, (images, target) in enumerate(train_loader):
         images = images.cuda(non_blocking=True)
         target = target.cuda(non_blocking=True)
-        sample_num += images.shape[0]
+        # sample_num += images.shape[0]
 
         output = model(images)
         loss = loss_function(output, target)
         acc1, acc5 = accuracy(output, target, topk=(1, 5))
-        pred_classes = torch.max(output, dim=1)[1].cuda(non_blocking=True)
-        accu_num += torch.eq(pred_classes, target).sum()
+        # pred_classes = torch.max(output, dim=1)[1].cuda(non_blocking=True)
+        # accu_num += torch.eq(pred_classes, target).sum()
 
         loss.backward()
-        accu_loss += loss.detach()
+        # accu_loss += loss.detach()
         optimizer.step()
         optimizer.zero_grad()
 
@@ -195,6 +197,8 @@ def train_one_epoch_local_data(train_loader, model, loss_function, optimizer, ep
         batch_time.update(time.time() - end)  # 记录每次迭代batch所需时间
         end = time.time()
         loss_meter.update(loss.item(), output.size(0))  # output.size(0)
+        acc1_meter.update(acc1.item(), output.size(0))
+        acc5_meter.update(acc5.item(), output.size(0))
         # log输出训练参数
         if iter % 50 == 0:
             etas = batch_time.avg * (num_steps - iter)
@@ -205,12 +209,17 @@ def train_one_epoch_local_data(train_loader, model, loss_function, optimizer, ep
                 f'eta {datetime.timedelta(seconds=int(etas))}\t'
                 f'time {batch_time.val:.4f} ({batch_time.avg:.4f})\t'
                 f'loss {loss_meter.val:.4f} ({loss_meter.avg:.4f})\t'
-                f'acc@1: {acc1.item():.4f}\t'
-                f'acc@5: {acc5.item():.4f}\t')
+                f'Acc@1 {acc1_meter.val:.3f} ({acc1_meter.avg:.3f})\t'
+                f'Acc@5 {acc5_meter.val:.3f} ({acc5_meter.avg:.3f})')
+                # f'acc@1: {acc1.item():.4f}\t'
+                # f'acc@5: {acc5.item():.4f}\t')
             # logger.info('\t'.join(outputs))
     epoch_time = time.time() - start
     logger.info(f"EPOCH {epoch} training takes {datetime.timedelta(seconds=int(epoch_time))}")
-    return accu_loss.item() / (iter + 1), accu_num.item() / sample_num
+    # print(f' * loss {loss_meter.avg:.4f} Acc@1 {acc1_meter.avg:.4f}')
+    return loss_meter.avg, acc1_meter.avg
+    # print(f'accu_loss {accu_loss.item() / (iter + 1): .4f} accu_num {accu_num.item() / sample_num: .4f}')
+    # return accu_loss.item() / (iter + 1), accu_num.item() / sample_num
 
 
 @torch.no_grad()
@@ -219,9 +228,9 @@ def validate(val_loader, model, loss_function, epoch, logger, args):
     logger.info('eval epoch {}'.format(epoch))
     model.eval()
 
-    accu_num = torch.zeros(1).cuda(non_blocking=True)   # 累计预测正确的样本数
-    accu_loss = torch.zeros(1).cuda(non_blocking=True)  # 累计损失
-    sample_num = 0
+    # accu_num = torch.zeros(1).cuda(non_blocking=True)   # 累计预测正确的样本数
+    # accu_loss = torch.zeros(1).cuda(non_blocking=True)  # 累计损失
+    # sample_num = 0
 
     batch_time = AverageMeter()
     loss_meter = AverageMeter()
@@ -232,14 +241,14 @@ def validate(val_loader, model, loss_function, epoch, logger, args):
         images = images.cuda(non_blocking=True)
         target = target.cuda(non_blocking=True)
 
-        sample_num += images.shape[0]
+        # sample_num += images.shape[0]
 
         output = model(images)
-        pred_classes = torch.max(output, dim=1)[1].cuda(non_blocking=True)
-        accu_num += torch.eq(pred_classes, target).sum()
+        # pred_classes = torch.max(output, dim=1)[1].cuda(non_blocking=True)
+        # accu_num += torch.eq(pred_classes, target).sum()
 
         loss = loss_function(output, target)
-        accu_loss += loss
+        # accu_loss += loss
 
         # 更新记录
         acc1, acc5 = accuracy(output, target, topk=(1, 5))
@@ -257,8 +266,10 @@ def validate(val_loader, model, loss_function, epoch, logger, args):
                 f'Loss {loss_meter.val:.4f} ({loss_meter.avg:.4f})\t'
                 f'Acc@1 {acc1_meter.val:.3f} ({acc1_meter.avg:.3f})\t'
                 f'Acc@5 {acc5_meter.val:.3f} ({acc5_meter.avg:.3f})')
-    logger.info(f' * Acc@1 {acc1_meter.avg:.3f} Acc@5 {acc5_meter.avg:.3f}') 
-    return accu_loss.item() / (iter + 1), accu_num.item() / sample_num
+    # logger.info(f' * Loss {loss_meter.avg:.3f} Acc@1 {acc1_meter.avg:.3f}')
+    return loss_meter.avg, acc1_meter.avg
+    # print(f'accu_loss {accu_loss.item() / (iter + 1): .4f} accu_num {accu_num.item() / sample_num: .4f}')
+    # return accu_loss.item() / (iter + 1), accu_num.item() / sample_num
 
 
 if __name__ == '__main__':

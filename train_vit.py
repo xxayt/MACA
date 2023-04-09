@@ -10,10 +10,10 @@ from torch.utils.tensorboard import SummaryWriter
 from torchvision import transforms
 from timm.utils import accuracy, AverageMeter
 
-# from vit.model import *
-import vit.model as model_ViT
-from vit.datasets.cifar100_dataset import load_data
-from vit.utils.utils import *
+import vit.model_rawvit as model_ViT
+# import vit.model_ViT as model_ViT
+from vit.cifar100_dataset import load_data
+from vit.utils import *
 
 def parse_option():
     parser = argparse.ArgumentParser('ViT training and evaluation script', add_help=False)
@@ -60,7 +60,7 @@ def main(args):
 
     # get net
     logger.info(f"Creating model:{args.model_file} -> {args.model_name}")
-    model = model_ViT.__dict__[args.model_file].__dict__[args.model_name](args.num_classes)  # 从mode_file中找到对应model_name的模型
+    model = model_ViT.__dict__[args.model_name](args.num_classes)  # 从mode_file中找到对应model_name的模型
     model.cuda()
     model = torch.nn.DataParallel(model)
     # logger.info(model)  # 打印网络结构

@@ -2,6 +2,7 @@ import argparse
 import json
 import logging
 import os
+import time
 import random
 from io import open
 import numpy as np
@@ -24,14 +25,14 @@ from vilbert.task_utils import LoadDatasetEval, LoadLosses, ForwardModelsTrain, 
 import vilbert.utils as utils
 import torch.distributed as dist
 
-logging.basicConfig(
-    format="%(asctime)s - %(levelname)s - %(name)s -   %(message)s",
-    datefmt="%m/%d/%Y %H:%M:%S",
-    level=logging.INFO,
-)
-logger = logging.getLogger(__name__)
+# logging.basicConfig(
+#     format="%(asctime)s - %(levelname)s - %(name)s -   %(message)s",
+#     datefmt="%m/%d/%Y %H:%M:%S",
+#     level=logging.INFO,
+# )
+# logger = logging.getLogger(__name__)
 
-def main():
+def parse_option():
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
@@ -50,7 +51,7 @@ def main():
     )
     parser.add_argument(
         "--output_dir",
-        default="results",
+        default="logs",
         type=str,
         help="The output directory where the model checkpoints will be written.",
     )
@@ -91,9 +92,9 @@ def main():
     )
     parser.add_argument(
         "--save_name",
-        default='',
+        default='eval',
         type=str,
-        help="save name for training.", 
+        help="save name for eval.", 
     )
     parser.add_argument(
         "--batch_size", default=512, type=int, help="what is the batch size?"
@@ -112,12 +113,11 @@ def main():
     )
 
     args = parser.parse_args()
+
+def main(args):
     with open('./vilbert/vilbert_tasks.yml', 'r') as f:
         task_cfg = edict(yaml.safe_load(f))
 
-    random.seed(args.seed)
-    np.random.seed(args.seed)
-    torch.manual_seed(args.seed)
 
     if args.baseline:
         from pytorch_pretrained_bert.modeling import BertConfig
@@ -132,12 +132,19 @@ def main():
         name = task_cfg[task]['name']
         task_names.append(name)
 
-    # timeStamp = '-'.join(task_names) + '_' + args.config_file.split('/')[1].split('.')[0]
-    timeStamp = args.from_pretrained.split('/')[1] + '-' + args.save_name
+    prefix = '-' + args.save_name if args.save_name else ''
+    # refcoco+ _ bert_base_6layer_6conect -pretrained
+    timeStamp = '-'.join(task_names) + '_' + args.config_file.split('/')[1].split('.')[0] + prefix
+    # timeStamp = args.from_pretrained.split('/')[1] + '-' + args.save_name
     savePath = os.path.join(args.output_dir, timeStamp)
 
+    creat_time = time.strftime("%Y%m%d-%H%M%S", time.localtime())  # 获取训练创建时间
+    args.path_log = savePath  # 创建log文件夹
+    os.makedirs(args.path_log, exist_ok=True)  # 创建训练log保存路径
+    logger = utils.create_logging(os.path.join(args.path_log, '%s-train.log' % (creat_time)))  # 创建训练保存log文件
+
     config = BertConfig.from_json_file(args.config_file)
-    bert_weight_name = json.load(open("config/" + args.bert_model + "_weight_name.json", "r"))
+    bert_weight_name = json.load(open("vilbert/config/" + args.bert_model + "_weight_name.json", "r"))
 
     if args.local_rank == -1 or args.no_cuda:
         device = torch.device("cuda" if torch.cuda.is_available() and not args.no_cuda else "cpu")
@@ -168,7 +175,7 @@ def main():
     task_batch_size, task_num_iters, task_ids, task_datasets_val, task_dataloader_val \
                         = LoadDatasetEval(args, task_cfg, args.tasks.split('-'))
 
-    tbLogger = utils.tbLogger(timeStamp, savePath, task_names, task_ids, task_num_iters, 1, save_logger=False, txt_name='eval.txt')
+    tbLogger = utils.tbLogger(savePath, savePath, task_names, task_ids, task_num_iters, 1, save_logger=False, txt_name='eval.txt')
 
     num_labels = max([dataset.num_labels for dataset in task_datasets_val.values()])
 
@@ -224,5 +231,9 @@ def main():
         json.dump(others, open(json_path+ '_others.json', 'w'))
 
 if __name__ == "__main__":
+    args = parse_option()
+    random.seed(args.seed)
+    np.random.seed(args.seed)
+    torch.manual_seed(args.seed)
 
-    main()
+    main(args)

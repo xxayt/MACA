@@ -189,10 +189,7 @@ def main(args):
         task = 'TASK' + task_id
         loss_scale[task] = task_lr[i] / base_lr
 
-    # if args.save_name:
-    #     prefix = '-' + args.save_name
-    # else:
-    #     prefix = ''
+    # 输出路径
     prefix = '-' + args.save_name if args.save_name else ''
     # refcoco+ _ bert_base_6layer_6conect -pretrained
     timeStamp = '-'.join(task_names) + '_' + args.config_file.split('/')[1].split('.')[0] + prefix
@@ -244,7 +241,7 @@ def main(args):
     task_batch_size, task_num_iters, task_ids, task_datasets_train, task_datasets_val, \
             task_dataloader_train, task_dataloader_val = LoadDatasets(args, task_cfg, args.tasks.split('-'))
 
-    tbLogger = utils.tbLogger(timeStamp, savePath, task_names, task_ids, task_num_iters, args.gradient_accumulation_steps)
+    tbLogger = utils.tbLogger(savePath, savePath, task_names, task_ids, task_num_iters, args.gradient_accumulation_steps)
 
     # if n_gpu > 0:
         # torch.cuda.manual_seed_all(args.seed)
@@ -334,7 +331,7 @@ def main(args):
 
     max_num_iter = max(task_num_iters.values())
     max_batch_size = max(task_batch_size.values())
-    
+    # 设置优化器
     if args.optimizer == 'BertAdam':
         optimizer = BertAdam(
             optimizer_grouped_parameters,
@@ -359,7 +356,7 @@ def main(args):
             t_total=num_train_optimization_steps,
             schedule='warmup_constant',
         )        
-
+    # 设置lr
     if args.lr_scheduler == 'automatic':
         lr_scheduler = ReduceLROnPlateau(optimizer, \
                         mode='max',

@@ -31,7 +31,7 @@
     --config_file vilbert/config/bert_base_6layer_6conect.json  --learning_rate 4e-5 --num_workers 0 \
     --tasks 4 --save_name pretrained
   - eval
-    CUDA_VISIBLE_DEVICES=0 python vilbert_eval_tasks.py --bert_model bert-base-uncased --from_pretrained save/refcoco+_bert_base_6layer_6conect-pretrained/pytorch_model_19.bin --config_file config/bert_base_6layer_6conect.json --task 4
+    CUDA_VISIBLE_DEVICES=0 python vilbert_eval_tasks.py --bert_model bert-base-uncased --from_pretrained vilbert/pretrain/refcoco+_bert_base_6layer_6conect-pretrained/pytorch_model_19.bin --config_file vilbert/config/bert_base_6layer_6conect.json --task 4
 
 - Flickr30k+ for Caption-Based Image Retrieval
   - train
@@ -41,6 +41,6 @@
     --tasks 3 --save_name pretrained
   - eval
     CUDA_VISIBLE_DEVICES=0 python vilbert_eval_retrieval.py --bert_model bert-base-uncased \
-    --from_pretrained save/RetrievalFlickr30k_bert_base_6layer_6conect-pretrained/pytorch_model_19.bin \
-    --config_file config/bert_base_6layer_6conect.json --task 3 --split test --batch_size 1
+    --from_pretrained vilbert/pretrain/RetrievalFlickr30k_bert_base_6layer_6conect-pretrained/pytorch_model_19.bin \
+    --config_file vilbert/config/bert_base_6layer_6conect.json --task 3 --split test --batch_size 1
     

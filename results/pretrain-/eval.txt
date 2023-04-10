@@ -1,0 +1,1 @@
+Validation [refcocoplus]: loss 7.570 score 66.648 

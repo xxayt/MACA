@@ -20,6 +20,9 @@
     apt update
     apt-get install tmux
     apt-get install aria2c
+    cd tools/refer
+    python setup.py install
+    make
     ```
 
 

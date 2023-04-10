@@ -55,6 +55,11 @@ class ImageFeaturesH5Reader(object):
 
     def __getitem__(self, image_id):
         image_id = str(image_id).encode()
+        # if image_id in self._image_ids:
+        #     index = self._image_ids.index(image_id)
+        # else:
+        #     print(image_id, "is not in self._image_ids")
+        #     return
         index = self._image_ids.index(image_id)
         if self._in_memory:
             # Load features during first epoch, all not loaded together as it

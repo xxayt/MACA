@@ -172,6 +172,7 @@ def main(args):
         from vilbert.vilbert_compact import BertConfig
         from vilbert.vilbert_compact import VILBertForVLTasks        
     else:
+        # 执行这里
         from vilbert.vilbert import BertConfig
         from vilbert.vilbert import VILBertForVLTasks
 
@@ -263,6 +264,7 @@ def main(args):
             args.from_pretrained, config, num_labels=num_labels, default_gpu=default_gpu
             )
     else:
+        # 执行这里
         model = VILBertForVLTasks.from_pretrained(
             args.from_pretrained, config, num_labels=num_labels, default_gpu=default_gpu
             )

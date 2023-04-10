@@ -10,8 +10,8 @@ from torch.utils.tensorboard import SummaryWriter
 from torchvision import transforms
 from timm.utils import accuracy, AverageMeter
 
-import vit.model_rawvit as model_ViT
-# import vit.model_ViT as model_ViT
+import vit.model.rawvit as model_ViT
+# import vit.model.ViT as model_ViT
 from vit.cifar100_dataset import load_data
 from vit.utils import *
 

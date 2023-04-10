@@ -113,18 +113,18 @@ def parse_option():
     )
 
     args = parser.parse_args()
+    return args
 
 def main(args):
     with open('./vilbert/vilbert_tasks.yml', 'r') as f:
         task_cfg = edict(yaml.safe_load(f))
 
-
     if args.baseline:
         from pytorch_pretrained_bert.modeling import BertConfig
-        from vilbert.basebert import BaseBertForVLTasks     
+        from vilbert.model.basebert import BaseBertForVLTasks     
     else:
-        from vilbert.vilbert import BertConfig
-        from vilbert.vilbert import VILBertForVLTasks
+        from vilbert.model.vilbert import BertConfig
+        from vilbert.model.vilbert import VILBertForVLTasks
 
     task_names = []
     for i, task_id in enumerate(args.tasks.split('-')):
@@ -132,16 +132,17 @@ def main(args):
         name = task_cfg[task]['name']
         task_names.append(name)
 
+    # 输出路径
     prefix = '-' + args.save_name if args.save_name else ''
-    # refcoco+ _ bert_base_6layer_6conect -pretrained
-    timeStamp = '-'.join(task_names) + '_' + args.config_file.split('/')[1].split('.')[0] + prefix
+    # refcoco+ - bert_base_6layer_6conect -eval
+    timeStamp = '-'.join(task_names) + '-' + args.config_file.split('/')[2].split('.')[0] + prefix
     # timeStamp = args.from_pretrained.split('/')[1] + '-' + args.save_name
     savePath = os.path.join(args.output_dir, timeStamp)
-
+    # 保存log
     creat_time = time.strftime("%Y%m%d-%H%M%S", time.localtime())  # 获取训练创建时间
     args.path_log = savePath  # 创建log文件夹
     os.makedirs(args.path_log, exist_ok=True)  # 创建训练log保存路径
-    logger = utils.create_logging(os.path.join(args.path_log, '%s-train.log' % (creat_time)))  # 创建训练保存log文件
+    logger = utils.create_logging(os.path.join(args.path_log, '%s%s.log' % (creat_time, prefix)))  # 创建训练保存log文件
 
     config = BertConfig.from_json_file(args.config_file)
     bert_weight_name = json.load(open("vilbert/config/" + args.bert_model + "_weight_name.json", "r"))

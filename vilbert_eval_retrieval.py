@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import random
+import time
 from io import open
 import numpy as np
 
@@ -18,8 +19,8 @@ import torch.nn.functional as F
 import torch.nn as nn
 
 from vilbert.task_utils import LoadDatasetEval, LoadLosses, ForwardModelsTrain, ForwardModelsVal, EvaluatingModel
-from vilbert.vilbert import VILBertForVLTasks, BertForMultiModalPreTraining
-from vilbert.basebert import BaseBertForVLTasks
+from vilbert.model.vilbert import VILBertForVLTasks, BertForMultiModalPreTraining
+from vilbert.model.basebert import BaseBertForVLTasks
 
 import vilbert.utils as utils
 import torch.distributed as dist
@@ -50,7 +51,7 @@ def parse_option():
     )
     parser.add_argument(
         "--output_dir",
-        default="results",
+        default="logs",
         type=str,
         help="The output directory where the model checkpoints will be written.",
     )
@@ -91,7 +92,7 @@ def parse_option():
     )
     parser.add_argument(
         "--save_name",
-        default='',
+        default='eval',
         type=str,
         help="save name for training.", 
     )
@@ -124,7 +125,7 @@ def main(args):
     if args.baseline:
         from pytorch_pretrained_bert.modeling import BertConfig
     else:
-        from vilbert.vilbert import BertConfig
+        from vilbert.model.vilbert import BertConfig
 
     task_names = []
     for i, task_id in enumerate(args.tasks.split('-')):
@@ -132,16 +133,19 @@ def main(args):
         name = task_cfg[task]['name']
         task_names.append(name)
 
-    # timeStamp = '-'.join(task_names) + '_' + args.config_file.split('/')[1].split('.')[0]
-    if '/' in args.from_pretrained:
-        timeStamp = args.from_pretrained.split('/')[1]
-    else:
-        timeStamp = args.from_pretrained
-
+    # 输出路径
+    prefix = '-' + args.save_name if args.save_name else ''
+    # RetrievalFlickr30k - bert_base_6layer_6conect -eval
+    timeStamp = '-'.join(task_names) + '-' + args.config_file.split('/')[2].split('.')[0] +prefix
     savePath = os.path.join(args.output_dir, timeStamp)
+    # 保存log
+    creat_time = time.strftime("%Y%m%d-%H%M%S", time.localtime())  # 获取训练创建时间
+    args.path_log = savePath  # 创建log文件夹
+    os.makedirs(args.path_log, exist_ok=True)  # 创建训练log保存路径
+    logger = utils.create_logging(os.path.join(args.path_log, '%s%s.log' % (creat_time, prefix)))  # 创建训练保存log文件
 
     config = BertConfig.from_json_file(args.config_file)
-    bert_weight_name = json.load(open("config/" + args.bert_model + "_weight_name.json", "r"))
+    bert_weight_name = json.load(open("vilbert/config/" + args.bert_model + "_weight_name.json", "r"))
 
     if args.local_rank == -1 or args.no_cuda:
         device = torch.device("cuda" if torch.cuda.is_available() and not args.no_cuda else "cpu")
@@ -172,6 +176,8 @@ def main(args):
 
     task_batch_size, task_num_iters, task_ids, task_datasets_val, task_dataloader_val \
                         = LoadDatasetEval(args, task_cfg, args.tasks.split('-'))
+
+    # tbLogger = utils.tbLogger(savePath, savePath, task_names, task_ids, task_num_iters, 1, save_logger=False, txt_name='eval.txt')
 
     num_labels = max([dataset.num_labels for dataset in task_datasets_val.values()])
 
@@ -270,7 +276,6 @@ def main(args):
 
 if __name__ == "__main__":
     args = parse_option()
-    print(args.seed)
     random.seed(args.seed)
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)

@@ -167,14 +167,14 @@ def main(args):
 
     if args.baseline:
         from pytorch_pretrained_bert.modeling import BertConfig
-        from vilbert.basebert import BaseBertForVLTasks
+        from vilbert.model.basebert import BaseBertForVLTasks
     elif args.compact:
         from vilbert.vilbert_compact import BertConfig
         from vilbert.vilbert_compact import VILBertForVLTasks        
     else:
         # 执行这里
-        from vilbert.vilbert import BertConfig
-        from vilbert.vilbert import VILBertForVLTasks
+        from vilbert.model.vilbert import BertConfig
+        from vilbert.model.vilbert import VILBertForVLTasks
 
     task_names = []
     task_lr = []
@@ -193,7 +193,7 @@ def main(args):
     # 输出路径
     prefix = '-' + args.save_name if args.save_name else ''
     # refcoco+ _ bert_base_6layer_6conect -pretrained
-    timeStamp = '-'.join(task_names) + '_' + args.config_file.split('/')[1].split('.')[0] + prefix
+    timeStamp = '-'.join(task_names) + '-' + args.config_file.split('/')[2].split('.')[0] + prefix
     savePath = os.path.join(args.output_dir, timeStamp)
 
     creat_time = time.strftime("%Y%m%d-%H%M%S", time.localtime())  # 获取训练创建时间

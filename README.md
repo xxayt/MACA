@@ -88,7 +88,7 @@ tree only for ViT
 ├── logs
 │   └── cifar100
 │       └── ..
-├── train_vit.py
+├── vit_train.py
 └── vit
     ├── cifar100_dataset.py
     ├── model_rawvit.py
@@ -122,13 +122,13 @@ tree only for ViT
     - dataset：[cifar100](http://www.cs.toronto.edu/~kriz/cifar-100-python.tar.gz)
     - train for vit_base_patch32_224_ImageNet21k
       ```
-      python train_vit.py --name vit_base_32 --data 'cifar100' --model_file 'model_ViT' \
+      python vit_train.py --name vit_base_32 --data 'cifar100' --model_file 'model_ViT' \
       --model_name 'vit_base_patch32_224_ImageNet21k' --pretrain 'vit_base_patch32_224_in21k.pth' \
       --batch_size 128 --lr 0.002
       ```
       train for vit_large_patch16_224_ImageNet21k
       ```
-      python train_vit.py --name vit_large_16 --data 'cifar100' --model_file 'model_ViT' \
+      python vit_train.py --name vit_large_16 --data 'cifar100' --model_file 'model_ViT' \
       --model_name 'vit_large_patch16_224_ImageNet21k' --pretrain 'vit_large_patch16_224_in21k.pth' \
       --batch_size 32 --lr 0.004
       ```

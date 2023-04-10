@@ -251,20 +251,20 @@ tree only for ViLBERT
       --config_file vilbert/config/bert_base_6layer_6conect.json  --learning_rate 4e-5 --num_workers 0 \
       --tasks 4
       ```
-      try bihead2
+      try different head_num
       ```
       CUDA_VISIBLE_DEVICES=0 python vilbert_train_tasks.py --bert_model bert-base-uncased \
-      --from_pretrained vilbert/pretrain/bert_base_6_layer_6_connect_freeze_0/pytorch_model_8.bin \
-      --config_file vilbert/config/bert_base_6layer_6conect_bihead2.json  --learning_rate 4e-5 --num_workers 0 \
-      --tasks 4
+      --from_pretrained vilbert/pretrain/bert_base_6_layer_6_connect_freeze_0/pytorch_model_8.bin --learning_rate 4e-5 --num_workers 0 --tasks 4 
+      # bihead2
+      --config_file vilbert/config/bert_base_6layer_6conect_bihead2.json
+      # bihead32
+      --config_file vilbert/config/bert_base_6layer_6conect_bihead32.json
+      # vhead32
+      --config_file vilbert/config/bert_base_6layer_6conect_vhead32.json
+      # thead48
+      --config_file vilbert/config/bert_base_6layer_6conect_thead48.json
       ```
-      try bihead32
-      ```
-      CUDA_VISIBLE_DEVICES=0 python vilbert_train_tasks.py --bert_model bert-base-uncased \
-      --from_pretrained vilbert/pretrain/bert_base_6_layer_6_connect_freeze_0/pytorch_model_8.bin \
-      --config_file vilbert/config/bert_base_6layer_6conect_bihead32.json  --learning_rate 4e-5 --num_workers 0 \
-      --tasks 4
-      ```
+
     - evaluation: 用源代码已有模型测试
       ```
       CUDA_VISIBLE_DEVICES=0 python vilbert_eval_tasks.py --bert_model bert-base-uncased --from_pretrained vilbert/pretrain/refcoco+_bert_base_6layer_6conect-pretrained/pytorch_model_19.bin --config_file vilbert/config/bert_base_6layer_6conect.json --task 4

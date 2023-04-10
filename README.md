@@ -258,7 +258,7 @@ tree only for ViLBERT
       --config_file vilbert/config/bert_base_6layer_6conect_bihead2.json  --learning_rate 4e-5 --num_workers 0 \
       --tasks 4
       ```
-      try bihead34
+      try bihead32
       ```
       CUDA_VISIBLE_DEVICES=0 python vilbert_train_tasks.py --bert_model bert-base-uncased \
       --from_pretrained vilbert/pretrain/bert_base_6_layer_6_connect_freeze_0/pytorch_model_8.bin \

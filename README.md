@@ -249,7 +249,14 @@ tree only for ViLBERT
       CUDA_VISIBLE_DEVICES=0 python vilbert_train_tasks.py --bert_model bert-base-uncased \
       --from_pretrained vilbert/pretrain/bert_base_6_layer_6_connect_freeze_0/pytorch_model_8.bin \
       --config_file vilbert/config/bert_base_6layer_6conect.json  --learning_rate 4e-5 --num_workers 0 \
-      --tasks 4 --save_name pretrained
+      --tasks 4
+      ```
+      try bihead4
+      ```
+      CUDA_VISIBLE_DEVICES=0 python vilbert_train_tasks.py --bert_model bert-base-uncased \
+      --from_pretrained vilbert/pretrain/bert_base_6_layer_6_connect_freeze_0/pytorch_model_8.bin \
+      --config_file vilbert/config/bert_base_6layer_6conect_bihead2.json  --learning_rate 4e-5 --num_workers 0 \
+      --tasks 4
       ```
     - evaluation
       ```
@@ -261,7 +268,7 @@ tree only for ViLBERT
     - dataset：[Flickr30k](https://www.dropbox.com/sh/qqk1xlhkqjyek8q/AAADni5hVBV2PAC8R_13xpIja?dl=0)（31,000 images from Flickr with five captions each）
     - train
       ```
-      CUDA_VISIBLE_DEVICES=0 python vilbert_train_tasks.py --bert_model bert-base-uncased --from_pretrained vilbert/pretrain/bert_base_6_layer_6_connect_freeze_0/pytorch_model_8.bin  --config_file vilbert/config/bert_base_6layer_6conect.json  --learning_rate 4e-5 --num_workers 0 --tasks 3 --save_name pretrained
+      CUDA_VISIBLE_DEVICES=0 python vilbert_train_tasks.py --bert_model bert-base-uncased --from_pretrained vilbert/pretrain/bert_base_6_layer_6_connect_freeze_0/pytorch_model_8.bin  --config_file vilbert/config/bert_base_6layer_6conect.json  --learning_rate 4e-5 --num_workers 0 --tasks 3
       ```
     - evaluation
       ```

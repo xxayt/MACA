@@ -119,7 +119,7 @@ def parse_option():
     )
     parser.add_argument(
         "--save_name",
-        default='',
+        default='train',
         type=str,
         help="save name for training.", 
     )

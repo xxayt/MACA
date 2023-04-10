@@ -1,6 +1,7 @@
 # dataset
 ./datasets/
 data/
+**/pretrain/
 !data/.README.md
 
 # __pycache__
@@ -12,6 +13,7 @@ example/
 # outputs
 outputs/
 logs/
+save/
 # **/*.pth
 
 # checkpoints

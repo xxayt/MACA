@@ -56,7 +56,7 @@ def parse_option():
     )
     parser.add_argument(
         "--output_dir",
-        default="save",
+        default="logs",
         type=str,
         help="The output directory where the model checkpoints will be written.",
     )
@@ -203,7 +203,7 @@ def main(args):
     os.makedirs(args.path_log, exist_ok=True)  # 创建训练log保存路径
     logger = utils.create_logging(os.path.join(args.path_log, '%s-train.log' % (creat_time)))  # 创建训练保存log文件
 
-    bert_weight_name = json.load(open("config/" + args.bert_model + "_weight_name.json", "r"))
+    bert_weight_name = json.load(open("vilbert/config/" + args.bert_model + "_weight_name.json", "r"))
 
     if args.local_rank == -1 or args.no_cuda:
         device = torch.device("cuda" if torch.cuda.is_available() and not args.no_cuda else "cpu")

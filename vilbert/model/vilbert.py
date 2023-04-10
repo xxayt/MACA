@@ -32,7 +32,7 @@ from torch.nn import CrossEntropyLoss
 import torch.nn.functional as F
 from torch.nn.utils.weight_norm import weight_norm
 
-from .utils import cached_path
+from ..utils import cached_path
 import pdb
 
 logger = logging.getLogger(__name__)
@@ -347,7 +347,7 @@ class BertEmbeddings(nn.Module):
         embeddings = self.dropout(embeddings)
         return embeddings
 
-
+# 构建来自image、location和type的嵌入
 class BertImageEmbeddings(nn.Module):
     """Construct the embeddings from image, spatial location (omit now) and token_type embeddings.
     """
@@ -362,8 +362,10 @@ class BertImageEmbeddings(nn.Module):
     def forward(self, input_ids, input_loc):
 
         img_embeddings = self.image_embeddings(input_ids)
-        loc_embeddings = self.image_location_embeddings(input_loc)        
-        embeddings = self.LayerNorm(img_embeddings+loc_embeddings)
+        loc_embeddings = self.image_location_embeddings(input_loc)
+        # embedding相加
+        embeddings = img_embeddings+loc_embeddings
+        embeddings = self.LayerNorm(embeddings)
         embeddings = self.dropout(embeddings)
         
         return embeddings
@@ -372,7 +374,8 @@ class BertImageEmbeddings(nn.Module):
 ###########################################################################
 # Bert (Text)Layer: (Text) Attention + (Text) Intermediate + (Text) Output
 ###########################################################################
-
+# 针对Text的Self Attention机制
+# num_attention_heads=12, (Text) Attention设为12头
 class BertSelfAttention(nn.Module):
     def __init__(self, config):
         super(BertSelfAttention, self).__init__()
@@ -430,12 +433,13 @@ class BertSelfAttention(nn.Module):
 
         # [bs, num_attention_heads, seq_length, attention_head_size] -> [bs, seq_length, num_attention_heads, attention_head_size]
         context_layer = context_layer.permute(0, 2, 1, 3).contiguous()
-        # [bs, seq_length, num_attention_heads, attention_head_size] -> [bs, seq_length, all_head_size
+        # [bs, seq_length, num_attention_heads, attention_head_size] -> [bs, seq_length, all_head_size]
         new_context_layer_shape = context_layer.size()[:-2] + (self.all_head_size,)
         context_layer = context_layer.view(*new_context_layer_shape)
         
         return context_layer, attention_probs
 
+# 执行linear, LN and residual
 class BertSelfOutput(nn.Module):
     def __init__(self, config):
         super(BertSelfOutput, self).__init__()
@@ -449,6 +453,7 @@ class BertSelfOutput(nn.Module):
         hidden_states = self.LayerNorm(hidden_states + input_tensor)
         return hidden_states
 
+# 结合SelfAttention和SelfOutput
 class BertAttention(nn.Module):
     def __init__(self, config):
         super(BertAttention, self).__init__()
@@ -460,6 +465,7 @@ class BertAttention(nn.Module):
         attention_output = self.output(self_output, input_tensor)
         return attention_output, attention_probs
 
+# MLP的第一层, 后接激活函数
 class BertIntermediate(nn.Module):
     def __init__(self, config):
         super(BertIntermediate, self).__init__()
@@ -476,6 +482,7 @@ class BertIntermediate(nn.Module):
         hidden_states = self.intermediate_act_fn(hidden_states)
         return hidden_states
 
+# 执行linear, LN and residual
 class BertOutput(nn.Module):
     def __init__(self, config):
         super(BertOutput, self).__init__()
@@ -489,6 +496,7 @@ class BertOutput(nn.Module):
         hidden_states = self.LayerNorm(hidden_states + input_tensor)
         return hidden_states
 
+# SelfSAttention后包含双层linear(BertIntermediate + BertOutput)
 class BertLayer(nn.Module):
     def __init__(self, config):
         super(BertLayer, self).__init__()
@@ -506,7 +514,8 @@ class BertLayer(nn.Module):
 ###########################################################################
 # Bert ImageLayer: Image Attention + Image Intermediate + Image Output
 ###########################################################################
-
+# 针对Image的Self Attention机制
+# v_num_attention_heads=8, Image Attention设为8头
 class BertImageSelfAttention(nn.Module):
     def __init__(self, config):
         super(BertImageSelfAttention, self).__init__()
@@ -516,9 +525,7 @@ class BertImageSelfAttention(nn.Module):
                 "heads (%d)" % (config.v_hidden_size, config.v_num_attention_heads)
             )
         self.num_attention_heads = config.v_num_attention_heads
-        self.attention_head_size = int(
-            config.v_hidden_size / config.v_num_attention_heads
-        )
+        self.attention_head_size = int(config.v_hidden_size / config.v_num_attention_heads)
         self.all_head_size = self.num_attention_heads * self.attention_head_size
 
         self.query = nn.Linear(config.v_hidden_size, self.all_head_size)
@@ -564,6 +571,7 @@ class BertImageSelfAttention(nn.Module):
         
         return context_layer, attention_probs
 
+# 执行linear, LN and residual
 class BertImageSelfOutput(nn.Module):
     def __init__(self, config):
         super(BertImageSelfOutput, self).__init__()
@@ -577,6 +585,7 @@ class BertImageSelfOutput(nn.Module):
         hidden_states = self.LayerNorm(hidden_states + input_tensor)
         return hidden_states
 
+# 结合SelfAttention和SelfOutput
 class BertImageAttention(nn.Module):
     def __init__(self, config):
         super(BertImageAttention, self).__init__()
@@ -588,6 +597,7 @@ class BertImageAttention(nn.Module):
         attention_output = self.output(self_output, input_tensor)
         return attention_output, attention_probs
 
+# MLP的第一层, 后接激活函数
 class BertImageIntermediate(nn.Module):
     def __init__(self, config):
         super(BertImageIntermediate, self).__init__()
@@ -604,6 +614,7 @@ class BertImageIntermediate(nn.Module):
         hidden_states = self.intermediate_act_fn(hidden_states)
         return hidden_states
 
+# 执行linear, LN and residual
 class BertImageOutput(nn.Module):
     def __init__(self, config):
         super(BertImageOutput, self).__init__()
@@ -617,6 +628,7 @@ class BertImageOutput(nn.Module):
         hidden_states = self.LayerNorm(hidden_states + input_tensor)
         return hidden_states
 
+# SelfSAttention后包含双层linear(BertImageIntermediate + BertImageOutput)
 class BertImageLayer(nn.Module):
     def __init__(self, config):
         super(BertImageLayer, self).__init__()
@@ -633,9 +645,12 @@ class BertImageLayer(nn.Module):
 
 ###########################################################################
 # Bert Co-Attention Layer
-# Bert ConnectionLayer: 	
+# Bert ConnectionLayer: Bi Attention + Image/Text Intermediate + Image/Text Output
 ###########################################################################
-
+'''
+Star Part!!!: 针对两模态交互的Self Attention机制
+bi_num_attention_heads=8, Bi Attention设为8头
+'''
 class BertBiAttention(nn.Module):
     def __init__(self, config):
         super(BertBiAttention, self).__init__()
@@ -677,46 +692,57 @@ class BertBiAttention(nn.Module):
         return x.permute(0, 2, 1, 3)
 
     def forward(self, input_tensor1, attention_mask1, input_tensor2, attention_mask2, co_attention_mask=None, use_co_attention_mask=False):
-
+        '''分别对image和text提取qkv
+        '''
         # for vision input.
+        # [bs, seq_length, v_hidden_size] -> [bs, seq_length, all_head_size]
         mixed_query_layer1 = self.query1(input_tensor1)
         mixed_key_layer1 = self.key1(input_tensor1)
         mixed_value_layer1 = self.value1(input_tensor1)
         # mixed_logit_layer1 = self.logit1(input_tensor1)
-
+        # [bs, seq_length, all_head_size] -> [bs, num_attention_heads, seq_length, attention_head_size]
         query_layer1 = self.transpose_for_scores(mixed_query_layer1)
         key_layer1 = self.transpose_for_scores(mixed_key_layer1)
         value_layer1 = self.transpose_for_scores(mixed_value_layer1)
         # logit_layer1 = self.transpose_for_logits(mixed_logit_layer1)
 
         # for text input:
+        # [bs, seq_length, hidden_size] -> [bs, seq_length, all_head_size]
         mixed_query_layer2 = self.query2(input_tensor2)
         mixed_key_layer2 = self.key2(input_tensor2)
         mixed_value_layer2 = self.value2(input_tensor2)
         # mixed_logit_layer2 = self.logit2(input_tensor2)
-
+        # [bs, seq_length, all_head_size] -> [bs, num_attention_heads, seq_length, attention_head_size]
         query_layer2 = self.transpose_for_scores(mixed_query_layer2)
         key_layer2 = self.transpose_for_scores(mixed_key_layer2)
         value_layer2 = self.transpose_for_scores(mixed_value_layer2)
         # logit_layer2 = self.transpose_for_logits(mixed_logit_layer2)
 
+        '''交换两模态query与对方模态key相乘
+        '''
         # Take the dot product between "query2" and "key1" to get the raw attention scores for value 1.
+        # query2点乘key1得到attention score1
         attention_scores1 = torch.matmul(query_layer2, key_layer1.transpose(-1, -2))
         attention_scores1 = attention_scores1 / math.sqrt(self.attention_head_size)
+        # 将attention mask1应用到attention score1上
         attention_scores1 = attention_scores1 + attention_mask1
 
         if use_co_attention_mask:
             attention_scores1 = attention_scores1 + co_attention_mask.permute(0,1,3,2)
 
         # Normalize the attention scores to probabilities.
+        # 将attention score1转换为概率
         attention_probs1 = nn.Softmax(dim=-1)(attention_scores1)
 
         # This is actually dropping out entire tokens to attend to, which might
         # seem a bit unusual, but is taken from the original Transformer paper.
         attention_probs1 = self.dropout1(attention_probs1)
 
+        # attention score1点乘value1得到context1
         context_layer1 = torch.matmul(attention_probs1, value_layer1)
+        # [bs, num_attention_heads, seq_length, attention_head_size] -> [bs, seq_length, num_attention_heads, attention_head_size]
         context_layer1 = context_layer1.permute(0, 2, 1, 3).contiguous()
+        # [bs, seq_length, num_attention_heads, attention_head_size] -> [bs, seq_length, all_head_size]
         new_context_layer_shape1 = context_layer1.size()[:-2] + (self.all_head_size,)
         context_layer1 = context_layer1.view(*new_context_layer_shape1)
 
@@ -744,6 +770,7 @@ class BertBiAttention(nn.Module):
 
         return context_layer1, context_layer2, (attention_probs1, attention_probs2)
 
+# 对两模态分别执行linear, LN and residual
 class BertBiOutput(nn.Module):
     def __init__(self, config):
         super(BertBiOutput, self).__init__()
@@ -763,8 +790,6 @@ class BertBiOutput(nn.Module):
         self.q_dropout2 = nn.Dropout(config.hidden_dropout_prob)
 
     def forward(self, hidden_states1, input_tensor1, hidden_states2, input_tensor2):
-
-
         context_state1 = self.dense1(hidden_states1)
         context_state1 = self.dropout1(context_state1)
 
@@ -780,7 +805,6 @@ class BertConnectionLayer(nn.Module):
     def __init__(self, config):
         super(BertConnectionLayer, self).__init__()
         self.biattention = BertBiAttention(config)
-
         self.biOutput = BertBiOutput(config)
 
         self.v_intermediate = BertImageIntermediate(config)
@@ -790,13 +814,14 @@ class BertConnectionLayer(nn.Module):
         self.t_output = BertOutput(config)
 
     def forward(self, input_tensor1, attention_mask1, input_tensor2, attention_mask2, co_attention_mask=None, use_co_attention_mask=False):
-
         bi_output1, bi_output2, co_attention_probs = self.biattention(
-            input_tensor1, attention_mask1, input_tensor2, attention_mask2, co_attention_mask, use_co_attention_mask
+            input_tensor1, attention_mask1, 
+            input_tensor2, attention_mask2, 
+            co_attention_mask, use_co_attention_mask
         )
 
         attention_output1, attention_output2 = self.biOutput(bi_output2, input_tensor1, bi_output1, input_tensor2)
-
+        # 对Image和Text分别再经过双层MLP输出
         intermediate_output1 = self.v_intermediate(attention_output1)
         layer_output1 = self.v_output(intermediate_output1, attention_output1)
         
@@ -873,7 +898,7 @@ class BertEncoder(nn.Module):
 
             assert self.fixed_t_layer <= t_end
             assert self.fixed_v_layer <= v_end
-
+            # 执行Image操作
             for idx in range(v_start, self.fixed_v_layer):
                 with torch.no_grad():
                     image_embedding, image_attention_probs = self.v_layer[idx](image_embedding, image_attention_mask)
@@ -881,7 +906,7 @@ class BertEncoder(nn.Module):
 
                     if output_all_attention_masks:
                         all_attnetion_mask_v.append(image_attention_probs)
-
+            
             for idx in range(v_start, v_end):
                 image_embedding, image_attention_probs = self.v_layer[idx](image_embedding, image_attention_mask)
                 
@@ -913,6 +938,7 @@ class BertEncoder(nn.Module):
                 txt_embedding = txt_embedding.expand(image_embedding.size(0), txt_embedding.size(1), txt_embedding.size(2))
                 txt_attention_mask = txt_attention_mask.expand(image_embedding.size(0), txt_attention_mask.size(1), txt_attention_mask.size(2), txt_attention_mask.size(3))
 
+            # 执行Co-Attention操作
             if self.with_coattention:
                 # do the bi attention.
                 image_embedding, txt_embedding, co_attention_probs = self.c_layer[count](
@@ -949,6 +975,7 @@ class BertEncoder(nn.Module):
 
         return all_encoder_layers_t, all_encoder_layers_v, (all_attention_mask_t, all_attnetion_mask_v, all_attention_mask_c)
 
+# 提取Text的cls token
 class BertTextPooler(nn.Module):
     def __init__(self, config):
         super(BertTextPooler, self).__init__()
@@ -958,6 +985,7 @@ class BertTextPooler(nn.Module):
     def forward(self, hidden_states):
         # We "pool" the model by simply taking the hidden state corresponding
         # to the first token.
+        # 提取cls token
         first_token_tensor = hidden_states[:, 0]
         pooled_output = self.dense(first_token_tensor)
         pooled_output = self.activation(pooled_output)
@@ -1312,7 +1340,7 @@ class BertPreTrainedModel(nn.Module):
 # BERT Model(BertPreTrainedModel): 
 # (Text)Embeddings + ImageEmbeddings + (all)Encoder + Pooler
 #######################################################################
-
+# base BertModel
 class BertModel(BertPreTrainedModel):
     """BERT model ("Bidirectional Embedding Representations from a Transformer").
 
@@ -1443,7 +1471,7 @@ class BertModel(BertPreTrainedModel):
 
         sequence_output_t = encoded_layers_t[-1]
         sequence_output_v = encoded_layers_v[-1]
-
+        # 分别从Image和Text输出中提取cls token
         pooled_output_t = self.t_pooler(sequence_output_t)
         pooled_output_v = self.v_pooler(sequence_output_v)
 

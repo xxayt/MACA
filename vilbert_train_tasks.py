@@ -119,7 +119,7 @@ def parse_option():
     )
     parser.add_argument(
         "--save_name",
-        default='',
+        default='train',
         type=str,
         help="save name for training.", 
     )
@@ -390,6 +390,7 @@ def main(args):
             for task_id in task_ids:
                 if iterId >= task_start_iter[task_id]:
                 # if iterId % task_interval[task_id] == 0:
+                    print("task_id, ", task_id)
                     loss, score = ForwardModelsTrain(args, task_cfg, device, task_id, task_count, task_iter_train, task_dataloader_train, model, task_losses, task_start_iter)
                     loss = loss * loss_scale[task_id]
                     if args.gradient_accumulation_steps > 1:
@@ -429,7 +430,7 @@ def main(args):
             model_to_save = (
                 model.module if hasattr(model, "module") else model
             )  # Only save the model it-self
-
+            # 保存模型
             if not os.path.exists(savePath):
                 os.makedirs(savePath)
             output_model_file = os.path.join(savePath, "pytorch_model_" + str(epochId) + ".bin")

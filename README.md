@@ -66,7 +66,7 @@ Check [Q&A](./Q&A.md) for more details, pay attention to **3.2 Transformer in Mu
 - see acc/loss curve by tensorboard
 
   ```
-  tensorboard --logdir ./logs/[path of tensorboard file]
+  tensorboard --logdir ./logs/[path of tensorboard file] --port=[....]
   ```
 
   
@@ -251,11 +251,18 @@ tree only for ViLBERT
       --config_file vilbert/config/bert_base_6layer_6conect.json  --learning_rate 4e-5 --num_workers 0 \
       --tasks 4
       ```
-      try bihead4
+      try bihead2
       ```
       CUDA_VISIBLE_DEVICES=0 python vilbert_train_tasks.py --bert_model bert-base-uncased \
       --from_pretrained vilbert/pretrain/bert_base_6_layer_6_connect_freeze_0/pytorch_model_8.bin \
       --config_file vilbert/config/bert_base_6layer_6conect_bihead2.json  --learning_rate 4e-5 --num_workers 0 \
+      --tasks 4
+      ```
+      try bihead34
+      ```
+      CUDA_VISIBLE_DEVICES=0 python vilbert_train_tasks.py --bert_model bert-base-uncased \
+      --from_pretrained vilbert/pretrain/bert_base_6_layer_6_connect_freeze_0/pytorch_model_8.bin \
+      --config_file vilbert/config/bert_base_6layer_6conect_bihead32.json  --learning_rate 4e-5 --num_workers 0 \
       --tasks 4
       ```
     - evaluation: 用源代码已有模型测试
@@ -265,6 +272,8 @@ tree only for ViLBERT
     - evaluation: 用我跑的模型测试
       ```
       CUDA_VISIBLE_DEVICES=0 python vilbert_eval_tasks.py --bert_model bert-base-uncased --from_pretrained vilbert/pretrain/refcoco+_bert_base_6layer_6conect-pretrained/pytorch_model_19.bin --config_file vilbert/config/bert_base_6layer_6conect.json --task 4
+      # 测head=8
+      CUDA_VISIBLE_DEVICES=0 python vilbert_eval_tasks.py --bert_model bert-base-uncased --from_pretrained logs/refcoco+-bert_base_6layer_6conect-train/pytorch_model_2.bin --config_file vilbert/config/bert_base_6layer_6conect.json --task 4
       ```
     
   - **基于标题的图像检索 Caption-Based Image Retrieval**

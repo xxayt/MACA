@@ -1,6 +1,34 @@
+- [Theory](#Theory)
+- [Experiment](#Experiment)
+  - [Repository Setup](##Repository Setup)
+  - [Experiment for fine-tune](##Experiment for fine-tune)
+    - [1 ViT](###1 ViT)
+      - [Introduction](###1 ViT)
+      - [Model](###1 ViT)
+      - [Pre-Training Weights](###1 ViT)
+      - [Transfer Tasks](###1 ViT)
+    - [2 ViLBERT](###2 ViLBERT)
+      - [Introduction](###2 ViLBERT)
+      - [Model](###2 ViLBERT)
+      - [Pre-Training Tasks](###2 ViLBERT)
+      - [Pre-Training Weights](###2 ViLBERT)
+      - [Transfer Tasks](###2 ViLBERT)
+- [Reference](#Reference)
 
+I mainly discuss **the influence of Multi-Head Attention in Cross-Modal Transformers** from both **theoretical and experimental** perspectives.
+
+---
+
+
+
+# Theory
+
+Check [Q&A](./Q&A.md) for more details, pay attention to **3.2 Transformer in MultiModel task**
+
+# Experiment
 
 ## Repository Setup
+
 1. Create a fresh conda environment, and install all dependencies.
     ```
     conda create -n env_MACA python=3.7
@@ -43,7 +71,7 @@
 
   
 
-### 1 ViT $^{[3]}$
+### 1 ViT
 
 tree only for ViT
 
@@ -59,22 +87,17 @@ tree only for ViT
 │           └── train
 ├── logs
 │   └── cifar100
-│       └── vit_base_32..
+│       └── ..
 ├── train_vit.py
-├── vit
-│   ├── cifar100_dataset.py
-│   ├── model_rawvit.py
-│   ├── model_ViT.py
-│   ├── pretrain
-│   │   ├── README.md
-│   │   ├── vit_base_patch32_224_in21k.pth
-│   │   └── vit_large_patch16_224_in21k.pth
-│   ├── __pycache__
-│   │   ├── cifar100_dataset.cpython-38.pyc
-│   │   ├── model_rawvit.cpython-38.pyc
-│   │   ├── model_ViT.cpython-38.pyc
-│   │   └── utils.cpython-38.pyc
-│   └── utils.py
+└── vit
+    ├── cifar100_dataset.py
+    ├── model_rawvit.py
+    ├── model_ViT.py
+    ├── pretrain
+    │   ├── README.md
+    │   ├── vit_base_patch32_224_in21k.pth
+    │   └── vit_large_patch16_224_in21k.pth
+    └── utils.py
 ```
 
 - **Introduction**：完全使用Transformer处理CV任务
@@ -94,6 +117,7 @@ tree only for ViT
   | huge-patch14-224  |                              /                               |                   not currently availabel                    |
   
 - **Transfer Tasks**：
+  
   - cifar100
     - dataset：[cifar100](http://www.cs.toronto.edu/~kriz/cifar-100-python.tar.gz)
     - train for vit_base_patch32_224_ImageNet21k
@@ -110,9 +134,85 @@ tree only for ViT
       ```
     - test
 
-### 2 ViLBERT $^{[7]}$
+### 2 ViLBERT
+
+tree only for ViLBERT
+
+```
+~/MACA# tree
+.
+├── data
+│   ├── flickr30k
+│   │   ├── all_data_final_test_set0_2014.jsonline
+│   │   ├── all_data_final_train_2014.jsonline
+│   │   ├── all_data_final_val_set0_2014.jsonline
+│   │   ├── cache
+│   │   │   ├── RetrievalFlickr30k_train_30.pkl
+│   │   │   └── RetrievalFlickr30k_val_30.pkl
+│   │   ├── flickr30k_test_resnet101_faster_rcnn_genome.lmdb
+│   │   │   ├── data.mdb
+│   │   │   └── lock.mdb
+│   │   └── hard_negative.pkl
+│   └── referExpression
+│       ├── cache
+│       │   ├── refcoco+_train_20_100.pkl
+│       │   └── refcoco+_val_20_100.pkl
+│       ├── refcoco+
+│       │   ├── instances.json
+│       │   └── refs(unc).p
+│       ├── refcoco+_gt.json
+│       ├── refcoco+_gt_resnet101_faster_rcnn_genome.lmdb
+│       │   ├── data.mdb
+│       │   └── lock.mdb
+│       └── refcoco+_resnet101_faster_rcnn_genome.lmdb
+│           ├── data.mdb
+│           └── lock.mdb
+├── logs
+│   ├── refcoco+_config-pretrained
+│   │   └── ..
+│   └── RetrievalFlickr30k_config-pretrained
+│       └── ..
+├── tools
+│   ├── DownloadConcptualCaption
+│   │   └── ..
+│   └── refer
+│       └── ..
+├── vilbert
+│   ├── basebert.py
+│   ├── config
+│   │   └── ..
+│   ├── datasets
+│   │   ├── concept_cap_dataset.py
+│   │   ├── _image_features_reader.py
+│   │   ├── __init__.py
+│   │   ├── refer_expression_dataset.py
+│   │   ├── retreival_dataset.py
+│   │   ├── vcr_dataset.py
+│   │   └── vqa_dataset.py
+│   ├── optimization.py
+│   ├── pretrain
+│   │   ├── bert_base_6_layer_6_connect_freeze_0
+│   │   │   ├── command.txt
+│   │   │   └── pytorch_model_8.bin
+│   │   ├── refcoco+_bert_base_6layer_6conect-pretrained
+│   │   │   ├── command.txt
+│   │   │   ├── out.txt
+│   │   │   └── pytorch_model_19.bin
+│   │   └── RetrievalFlickr30k_bert_base_6layer_6conect-pretrained
+│   │       ├── command.txt
+│   │       ├── out.txt
+│   │       └── pytorch_model_19.bin
+│   ├── task_utils.py
+│   ├── utils.py
+│   ├── vilbert.py
+│   └── vilbert_tasks.yml
+├── vilbert_eval_retrieval.py
+├── vilbert_eval_tasks.py
+└── vilbert_train_tasks.py
+```
 
 - **Introduction**：
+  
   - 第一个提出Co-Attention（即交换Attention中不同模态的query）的模态融合方法。
   - 在Conceptual Captions数据集上进行VLP；再迁移到下游的四个vision-language任务中（VQA、VCR、Grounding Referring Expressions、Caption-Based Image Retrieval）。
 - **Model**：
@@ -123,22 +223,27 @@ tree only for ViT
   <img src=".\image\vilbert.png" alt="vilbert" style="zoom:50%;" />
 
 - **Pre-Training Tasks**：
+  
   1. masked multi-modal modelling
   2. multi-modal alignment prediction
+  
+- **Pre-Training Weights**：see [https://github.com/google-research/vision_transformer](https://github.com/google-research/vision_transformer) for other more weights
 
-- **Pre-Training Weights**：
-
-  |       model       |                   Pre-train on ImageNet1k                    |                   Pre-train on ImageNet21k                   |
-  | :---------------: | :----------------------------------------------------------: | :----------------------------------------------------------: |
-  | ..  | .. | .. |
+  |       tasks       | model: bert_base_6layer_6conect |
+  | :---------------: | :----------------------------------------------------------: |
+  | Pertrained on Conceptual Captions for RefCOCO+ Train | [bert_base_6_layer_6_connect_freeze_0](https://drive.google.com/drive/folders/1JVM5WiolJJLnY9_lruxSaSop7IFX8a-v) |
+  | Pretrained on RefCOCO+ for RefCOCO+ Eval | [refcoco+_bert_base_6layer_6conect-pretrained](https://drive.google.com/drive/folders/1GWY2fEbZCYHkcnxd0oysU0olfPdzcD3l) |
+  | Pertrained on Conceptual Captions for Flickr30k Train | [bert_base_6_layer_6_connect_freeze_0](https://drive.google.com/drive/folders/1JVM5WiolJJLnY9_lruxSaSop7IFX8a-v) |
+  | Pretrained on Flickr30k for Flickr30k Eval | [RetrievalFlickr30k_bert_base_6layer_6conect-pretrained](https://drive.google.com/drive/folders/18zUTF3ZyOEuOT1z1aykwtIkBUhfROmJo) |
 
 - **Transfer Tasks**：
-  - VQA
+  - 视觉问答 VQA
     - dataset：VQA 2.0（1.1 million questions about COCO images each with 10 answers）
-  - VCR
+  - 视觉常识回答 [VCR]([VCR - Dropbox](https://www.dropbox.com/sh/9pgxc3njd3iq03o/AADXgnT1HmEdrds7aujTncBGa?dl=0))
 
-  - Grounding Referring Expressions
-    - dataset：RefCOCO+
+  - **引用表达式理解 Grounding Referring Expressions**
+    
+    - dataset：[RefCOCO+]([referExpression - Dropbox](https://www.dropbox.com/sh/4jqadcfkai68yoe/AADHI6dKviFcraeCMdjiaDENa?dl=0))
     - train
       ```
       CUDA_VISIBLE_DEVICES=0 python vilbert_train_tasks.py --bert_model bert-base-uncased \
@@ -148,35 +253,26 @@ tree only for ViT
       ```
     - evaluation
       ```
-      CUDA_VISIBLE_DEVICES=0 python vilbert_eval_tasks.py --bert_model bert-base-uncased --from_pretrained save/refcoco+_bert_base_6layer_6conect-pretrained/pytorch_model_19.bin --config_file config/bert_base_6layer_6conect.json --task 4
+      CUDA_VISIBLE_DEVICES=0 python vilbert_eval_tasks.py --bert_model bert-base-uncased --from_pretrained vilbert/pretrain/refcoco+_bert_base_6layer_6conect-pretrained/pytorch_model_19.bin --config_file vilbert/config/bert_base_6layer_6conect.json --task 4
       ```
-
-  - Caption-Based Image Retrieval 基于标题的图像检索
-    - dataset：Flickr30k（31,000 images from Flickr with five captions each）
+    
+  - **基于标题的图像检索 Caption-Based Image Retrieval**
+    
+    - dataset：[Flickr30k](https://www.dropbox.com/sh/qqk1xlhkqjyek8q/AAADni5hVBV2PAC8R_13xpIja?dl=0)（31,000 images from Flickr with five captions each）
     - train
       ```
       CUDA_VISIBLE_DEVICES=0 python vilbert_train_tasks.py --bert_model bert-base-uncased --from_pretrained vilbert/pretrain/bert_base_6_layer_6_connect_freeze_0/pytorch_model_8.bin  --config_file vilbert/config/bert_base_6layer_6conect.json  --learning_rate 4e-5 --num_workers 0 --tasks 3 --save_name pretrained
       ```
     - evaluation
       ```
-      CUDA_VISIBLE_DEVICES=0 python vilbert_eval_retrieval.py --bert_model bert-base-uncased --from_pretrained save/RetrievalFlickr30k_bert_base_6layer_6conect-pretrained/pytorch_model_19.bin --config_file config/bert_base_6layer_6conect.json --task 3 --split test --batch_size 1
+      CUDA_VISIBLE_DEVICES=0 python vilbert_eval_retrieval.py --bert_model bert-base-uncased --from_pretrained vilbert/pretrain/RetrievalFlickr30k_bert_base_6layer_6conect-pretrained/pytorch_model_19.bin --config_file vilbert/config/bert_base_6layer_6conect.json --task 3 --split test --batch_size 1
       ```
 
-### 3 ViLT
+>  3 ViLT
+>
+> 4 CrossViT
 
-- 介绍
-- 模型
-- 下游任务测试
-
-### 4 CrossViT
-
-- 介绍
-- 模型
-- 下游任务测试
-
-
-
-## Reference
+# Reference
 
 - [1] [Attention Is All You Need (2017)](https://arxiv.org/abs/1706.03762)
 - [2] [An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale (2021)](https://arxiv.org/abs/2010.11929)

@@ -251,7 +251,7 @@ def main(args):
         os.makedirs(args.output_dir)
 
     num_train_optimization_steps = max(task_num_iters.values()) * args.num_train_epochs // args.gradient_accumulation_steps
-    num_labels = max([dataset.num_labels for dataset in task_datasets_train.values()])
+    num_labels = max([dataset.num_labels for dataset in task_datasets_train.values()])  # num_labels=1
 
     task_start_iter = {}
     task_interval = {}

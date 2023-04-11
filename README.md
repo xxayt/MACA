@@ -106,6 +106,26 @@ tree only for ViT
 
   <img src=".\image\vit.png" alt="vit" style="zoom:40%;" />
 
+  ```python
+  def forward(self, x):
+          B, N, C = x.shape
+          qkv = self.qkv(x)
+          # 拆分多头
+          qkv = qkv.reshape(B, N, 3, self.num_heads, C // self.num_heads).permute(2, 0, 3, 1, 4)
+          q, k, v = qkv[0], qkv[1], qkv[2]
+          # QK点积
+          attn = (q @ k.transpose(-2, -1)) * self.scale
+          attn = self.attn_drop(attn.softmax(dim=-1))
+          # attn-score和V点积
+          x = (attn @ v).transpose(1, 2).reshape(B, N, C)
+          # 拼接后，MLP映射
+          x = self.proj(x)
+          x = self.proj_drop(x)
+          return x
+  ```
+
+  
+
 - **Pre-Training Weights**：
   
   |       model       |                   Pre-train on ImageNet1k                    |                   Pre-train on ImageNet21k                   |
@@ -139,82 +159,14 @@ tree only for ViT
 tree only for ViLBERT
 
 ```
-~/MACA# tree
-.
-├── data
-│   ├── flickr30k
-│   │   ├── all_data_final_test_set0_2014.jsonline
-│   │   ├── all_data_final_train_2014.jsonline
-│   │   ├── all_data_final_val_set0_2014.jsonline
-│   │   ├── cache
-│   │   │   ├── RetrievalFlickr30k_train_30.pkl
-│   │   │   └── RetrievalFlickr30k_val_30.pkl
-│   │   ├── flickr30k_test_resnet101_faster_rcnn_genome.lmdb
-│   │   │   ├── data.mdb
-│   │   │   └── lock.mdb
-│   │   └── hard_negative.pkl
-│   └── referExpression
-│       ├── cache
-│       │   ├── refcoco+_train_20_100.pkl
-│       │   └── refcoco+_val_20_100.pkl
-│       ├── refcoco+
-│       │   ├── instances.json
-│       │   └── refs(unc).p
-│       ├── refcoco+_gt.json
-│       ├── refcoco+_gt_resnet101_faster_rcnn_genome.lmdb
-│       │   ├── data.mdb
-│       │   └── lock.mdb
-│       └── refcoco+_resnet101_faster_rcnn_genome.lmdb
-│           ├── data.mdb
-│           └── lock.mdb
-├── logs
-│   ├── refcoco+_config-pretrained
-│   │   └── ..
-│   └── RetrievalFlickr30k_config-pretrained
-│       └── ..
-├── tools
-│   ├── DownloadConcptualCaption
-│   │   └── ..
-│   └── refer
-│       └── ..
-├── vilbert
-│   ├── basebert.py
-│   ├── config
-│   │   └── ..
-│   ├── datasets
-│   │   ├── concept_cap_dataset.py
-│   │   ├── _image_features_reader.py
-│   │   ├── __init__.py
-│   │   ├── refer_expression_dataset.py
-│   │   ├── retreival_dataset.py
-│   │   ├── vcr_dataset.py
-│   │   └── vqa_dataset.py
-│   ├── optimization.py
-│   ├── pretrain
-│   │   ├── bert_base_6_layer_6_connect_freeze_0
-│   │   │   ├── command.txt
-│   │   │   └── pytorch_model_8.bin
-│   │   ├── refcoco+_bert_base_6layer_6conect-pretrained
-│   │   │   ├── command.txt
-│   │   │   ├── out.txt
-│   │   │   └── pytorch_model_19.bin
-│   │   └── RetrievalFlickr30k_bert_base_6layer_6conect-pretrained
-│   │       ├── command.txt
-│   │       ├── out.txt
-│   │       └── pytorch_model_19.bin
-│   ├── task_utils.py
-│   ├── utils.py
-│   ├── vilbert.py
-│   └── vilbert_tasks.yml
-├── vilbert_eval_retrieval.py
-├── vilbert_eval_tasks.py
-└── vilbert_train_tasks.py
+
 ```
 
 - **Introduction**：
   
   - 第一个提出Co-Attention（即交换Attention中不同模态的query）的模态融合方法。
   - 在Conceptual Captions数据集上进行VLP；再迁移到下游的四个vision-language任务中（VQA、VCR、Grounding Referring Expressions、Caption-Based Image Retrieval）。
+  
 - **Model**：
   - Textual Embedder：BERT
   - Visual Embedder：Faster-CNN ?
@@ -239,8 +191,9 @@ tree only for ViLBERT
 - **Transfer Tasks**：
   - 视觉问答 VQA
     - dataset：VQA 2.0（1.1 million questions about COCO images each with 10 answers）
+    
   - 视觉常识回答 [VCR]([VCR - Dropbox](https://www.dropbox.com/sh/9pgxc3njd3iq03o/AADXgnT1HmEdrds7aujTncBGa?dl=0))
-
+  
   - **引用表达式理解 Grounding Referring Expressions**
     
     - dataset：[RefCOCO+]([referExpression - Dropbox](https://www.dropbox.com/sh/4jqadcfkai68yoe/AADHI6dKviFcraeCMdjiaDENa?dl=0))
@@ -266,6 +219,24 @@ tree only for ViLBERT
       ```
       CUDA_VISIBLE_DEVICES=0 python vilbert_eval_tasks.py --bert_model bert-base-uncased --from_pretrained vilbert/pretrain/refcoco+_bert_base_6layer_6conect-pretrained/pytorch_model_19.bin --config_file vilbert/config/bert_base_6layer_6conect.json --task 4
       ```
+    
+    | .json | Co_Att_Heads | Image_Att_Heads | Text_Att_Heads |                  valid(max)                  |            eval            | .log |
+    | :---: | :----------: | :-------------: | :------------: | :------------------------------------------: | :------------------------: | :--: |
+    |       |      2       |        8        |       12       |                66.453(2.bin)                 |           68.507           |      |
+    |  scr  |      8       |        8        |       12       |                 68.49(2.bin)                 |       68.507(2.bin)        |      |
+    |       |      32      |        8        |       12       |             68.24(4.bin)突然下降             |           68.247           |      |
+    |       |      8       |       32        |       12       | 68.19(1.bin)68.14(4.bin)61.07(7.bin)突然下降 | 68.210(1.bin)68.135(4.bin) |      |
+    |       |      8       |        8        |       48       |           67.57(2.bin)67.38(3.bin)           |       67.578(2.bin)        |      |
+    |       |      32      |       32        |       48       |           67.066(2.bin)68.2(3.bin)           |  67.048(2.bin)68.2(3.bin)  |      |
+    
+    | .json file  | Co_Att_Heads | Image_Att_Heads | Text_Att_Heads |    valid(max)     |     eval      | .log file |
+    | :---------: | :----------: | :-------------: | :------------: | :---------------: | :-----------: | :-------: |
+    |     scr     |      8       |        8        |       12       |       68.49       | 68.507(2.bin) |           |
+    |  _bihead2   |      2       |        -        |       -        | 66.45 **(-2.04)** |               |           |
+    |  _bihead32  |      32      |        -        |       -        |   68.24 (-0.25)   |    68.247     |           |
+    |  _vhead32   |      -       |       32        |       -        |   68.19 (-0.3)    | 68.210(1.bin) |           |
+    |  _thead48   |      -       |        -        |       48       | 67.57 **(-0.92)** | 67.578(2.bin) |           |
+    | _bi32v32t48 |      32      |       32        |       48       |   68.2 (-0.29)    |  68.2(3.bin)  |           |
     
   - **基于标题的图像检索 Caption-Based Image Retrieval**
     

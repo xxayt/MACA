@@ -7,7 +7,7 @@
   - Vision Transformer (ViT)：[An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale](https://arxiv.org/abs/2010.11929)
   - Multimodal Trandformer：[Multimodal Learning with Transformers: A Survey](https://arxiv.org/abs/2206.06488)
 
-关于多头注意力机制对跨模态attention的影响可直接查看[3.2 Transformer in MultiModel task](##3.2 Transformer in MultiModel task)
+关于多头注意力机制对跨模态attention的影响可直接查看[3.2 Transformer in MultiModel task](#3.2 Transformer in MultiModel task)
 
 
 
@@ -233,6 +233,8 @@ $$
         3. **注意力角度**：可以计算每个token相对其他token（可能是不同模态的token）的相似度，作为attention score来计算对全局的贡献程度（例如：确定一张图像的某些重要区域，与文本描述相匹配；确定视频中的某些重要帧，作为视频的特征表示来提高检测性能）。
         4. **数据偏差（鲁棒性）角度**：作为attention机制，通过对不同模态的特征进行加权，使模型更关注那些对任务重要的特征，从而减少特定模态的数据偏差（例如：图像的拍摄角度、光照；文本的语言习惯、文化背景）对模型的影响，并缓解多模态数据太过丰富带来的噪声和干扰问题，提高模型的鲁棒性。
         5. **几何拓扑角度**：Attention可以看作将不同模态的输入建模为全连接图（读取全局信息），将每个输入token视为图中的节点，这样可对不同模态数据选择合适的建模空间。
+      - qkv和multi-head结构在align方面的负面影响：
+        - 
 
 ### 3.2.1 MultiModel Input
 
@@ -272,12 +274,6 @@ $$
 ---
 
 # 4 实验设想
-
-## 4.0 align方面
-
-> Q：主要关注点可以放在cross-attention的结构上，结合你提到的多模态里面重要的align这一个点，想一想可能存在的潜在的负面影响。
-
-
 
 ## 4.1 ViLBERT
 

@@ -66,7 +66,7 @@ Check [Q&A](./Q&A.md) for more details, pay attention to **3.2 Transformer in Mu
 - see acc/loss curve by tensorboard
 
   ```
-  tensorboard --logdir ./logs/[path of tensorboard file] --port=[....]
+  tensorboard --logdir ./logs/[path of tensorboard file] --port=[eg:6008]
   ```
 
   

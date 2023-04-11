@@ -23,7 +23,7 @@ I mainly discuss **the influence of Multi-Head Attention in Cross-Modal Transfor
 
 # Theory
 
-Check [Q&A](./Q&A.md) for more details, pay attention to **3.2 Transformer in MultiModel task**
+Check [Q&A](./Q&A.pdf) for more details, pay attention to **3.2 Transformer in MultiModel task**
 
 # Experiment
 

@@ -66,7 +66,7 @@ Check [Q&A](./Q&A.md) for more details, pay attention to **3.2 Transformer in Mu
 - see acc/loss curve by tensorboard
 
   ```
-  tensorboard --logdir ./logs/[path of tensorboard file]
+  tensorboard --logdir ./logs/[path of tensorboard file] --port=[eg:6008]
   ```
 
   
@@ -204,20 +204,44 @@ tree only for ViLBERT
       --config_file vilbert/config/bert_base_6layer_6conect.json  --learning_rate 4e-5 --num_workers 0 \
       --tasks 4
       ```
-      try bihead4
+      try different head_num
       ```
       CUDA_VISIBLE_DEVICES=0 python vilbert_train_tasks.py --bert_model bert-base-uncased \
-      --from_pretrained vilbert/pretrain/bert_base_6_layer_6_connect_freeze_0/pytorch_model_8.bin \
-      --config_file vilbert/config/bert_base_6layer_6conect_bihead2.json  --learning_rate 4e-5 --num_workers 0 \
-      --tasks 4
+      --from_pretrained vilbert/pretrain/bert_base_6_layer_6_connect_freeze_0/pytorch_model_8.bin --learning_rate 4e-5 --num_workers 0 --tasks 4 
+      # bihead2
+      --config_file vilbert/config/bert_base_6layer_6conect_bihead2.json
+      # bihead32
+      --config_file vilbert/config/bert_base_6layer_6conect_bihead32.json
+      # vhead32
+      --config_file vilbert/config/bert_base_6layer_6conect_vhead32.json
+      # thead48
+      --config_file vilbert/config/bert_base_6layer_6conect_thead48.json
+      # bi32v32t48
+      --config_file vilbert/config/bert_base_6layer_6conect_bi32v32t48.json
       ```
+
     - evaluation: 用源代码已有模型测试
       ```
       CUDA_VISIBLE_DEVICES=0 python vilbert_eval_tasks.py --bert_model bert-base-uncased --from_pretrained vilbert/pretrain/refcoco+_bert_base_6layer_6conect-pretrained/pytorch_model_19.bin --config_file vilbert/config/bert_base_6layer_6conect.json --task 4
       ```
     - evaluation: 用我跑的模型测试
       ```
-      CUDA_VISIBLE_DEVICES=0 python vilbert_eval_tasks.py --bert_model bert-base-uncased --from_pretrained vilbert/pretrain/refcoco+_bert_base_6layer_6conect-pretrained/pytorch_model_19.bin --config_file vilbert/config/bert_base_6layer_6conect.json --task 4
+      CUDA_VISIBLE_DEVICES=0 python vilbert_eval_tasks.py --bert_model bert-base-uncased --task 4 
+      # 测src
+      --config_file vilbert/config/bert_base_6layer_6conect.json 
+      --from_pretrained logs/refcoco+-bert_base_6layer_6conect-train/pytorch_model_2.bin
+      # 测bihead32
+      --config_file vilbert/config/bert_base_6layer_6conect_bihead32.json 
+      --from_pretrained logs/refcoco+-bert_base_6layer_6conect_bihead32-train/pytorch_model_4.bin
+      # 测vhead32
+      --config_file vilbert/config/bert_base_6layer_6conect_vhead32.json 
+      --from_pretrained logs/refcoco+-bert_base_6layer_6conect_vhead32-train/pytorch_model_1.bin
+      # 测thead48
+      --config_file vilbert/config/bert_base_6layer_6conect_thead48.json 
+      --from_pretrained logs/refcoco+-bert_base_6layer_6conect_thead48-train/pytorch_model_2.bin
+      # 测bi=48,v=32,t=48
+      --config_file vilbert/config/bert_base_6layer_6conect_bi32v32t48.json 
+      --from_pretrained logs/refcoco+-bert_base_6layer_6conect_bi32v32t48-train/pytorch_model_3.bin
       ```
     
     | .json | Co_Att_Heads | Image_Att_Heads | Text_Att_Heads |                  valid(max)                  |            eval            | .log |

@@ -1486,7 +1486,7 @@ class BertModel(BertPreTrainedModel):
 # BERT ForMultiModalPreTraining(BertPreTrainedModel): 
 # BertModel + BertPreTrainingHeads + (optional) Prediction loss for [masked_lm|next_sentence|masked_image]
 ############################################################################################################
-
+# for zero_shot retrieval
 class BertForMultiModalPreTraining(BertPreTrainedModel):
     """BERT model with multi modal pre-training heads.
     """
@@ -1618,6 +1618,7 @@ class VILBertForVLTasks(BertPreTrainedModel):
         co_attention_mask=None,
         output_all_encoded_layers=False,
     ):
+        # BertModel
         sequence_output_t, sequence_output_v, pooled_output_t, pooled_output_v, _ = self.bert(
             input_txt,
             input_imgs,
@@ -1636,7 +1637,7 @@ class VILBertForVLTasks(BertPreTrainedModel):
         vision_logit = 0
         linguisic_prediction = 0
         linguisic_logit = 0
-        
+        # BertPreTrainingHeads
         linguisic_prediction, vision_prediction, vil_binary_prediction = self.cls(
             sequence_output_t, sequence_output_v, pooled_output_t, pooled_output_v
         )

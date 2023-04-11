@@ -251,7 +251,7 @@ def main(args):
         os.makedirs(args.output_dir)
 
     num_train_optimization_steps = max(task_num_iters.values()) * args.num_train_epochs // args.gradient_accumulation_steps
-    num_labels = max([dataset.num_labels for dataset in task_datasets_train.values()])
+    num_labels = max([dataset.num_labels for dataset in task_datasets_train.values()])  # num_labels=1
 
     task_start_iter = {}
     task_interval = {}
@@ -390,7 +390,6 @@ def main(args):
             for task_id in task_ids:
                 if iterId >= task_start_iter[task_id]:
                 # if iterId % task_interval[task_id] == 0:
-                    print("task_id, ", task_id)
                     loss, score = ForwardModelsTrain(args, task_cfg, device, task_id, task_count, task_iter_train, task_dataloader_train, model, task_losses, task_start_iter)
                     loss = loss * loss_scale[task_id]
                     if args.gradient_accumulation_steps > 1:

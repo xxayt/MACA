@@ -277,7 +277,9 @@ tree only for ViLBERT
       # 测head=8
       --config_file vilbert/config/bert_base_6layer_6conect.json 
       --from_pretrained ../refcoco+_bert_base_6layer_6conect-pretrained/pytorch_model_
-
+      # 测bi=48,v=32,t=48
+      --config_file vilbert/config/bert_base_6layer_6conect_bi32v32t48.json
+      --from_pretrained logs/refcoco+-bert_base_6layer_6conect_bi32v32t48-train/pytorch_model_3.bin
       ```
     
   - **基于标题的图像检索 Caption-Based Image Retrieval**

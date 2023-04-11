@@ -230,6 +230,9 @@ tree only for ViLBERT
       # 测src
       --config_file vilbert/config/bert_base_6layer_6conect.json 
       --from_pretrained logs/refcoco+-bert_base_6layer_6conect-train/pytorch_model_2.bin
+      # 测bihead2
+      --config_file vilbert/config/bert_base_6layer_6conect_bihead2.json 
+      --from_pretrained logs/refcoco+-bert_base_6layer_6conect_bihead2-train/pytorch_model_2.bin
       # 测bihead32
       --config_file vilbert/config/bert_base_6layer_6conect_bihead32.json 
       --from_pretrained logs/refcoco+-bert_base_6layer_6conect_bihead32-train/pytorch_model_4.bin

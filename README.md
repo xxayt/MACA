@@ -274,6 +274,12 @@ tree only for ViLBERT
     - evaluation: 用我跑的模型测试
       ```
       CUDA_VISIBLE_DEVICES=0 python vilbert_eval_tasks.py --bert_model bert-base-uncased --task 4 
+      # 测src
+      --config_file vilbert/config/bert_base_6layer_6conect.json 
+      --from_pretrained logs/refcoco+-bert_base_6layer_6conect-train/pytorch_model_2.bin
+      # 测bihead32
+      --config_file vilbert/config/bert_base_6layer_6conect_bihead32.json 
+      --from_pretrained logs/refcoco+-bert_base_6layer_6conect_bihead32-train/pytorch_model_4.bin
       # 测vhead32
       --config_file vilbert/config/bert_base_6layer_6conect_vhead32.json 
       --from_pretrained logs/refcoco+-bert_base_6layer_6conect_vhead32-train/pytorch_model_1.bin

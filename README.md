@@ -263,6 +263,8 @@ tree only for ViLBERT
       --config_file vilbert/config/bert_base_6layer_6conect_vhead32.json
       # thead48
       --config_file vilbert/config/bert_base_6layer_6conect_thead48.json
+      # bi32v32t48
+      --config_file vilbert/config/bert_base_6layer_6conect_bi32v32t48.json
       ```
 
     - evaluation: 用源代码已有模型测试
@@ -271,9 +273,13 @@ tree only for ViLBERT
       ```
     - evaluation: 用我跑的模型测试
       ```
-      CUDA_VISIBLE_DEVICES=0 python vilbert_eval_tasks.py --bert_model bert-base-uncased --from_pretrained vilbert/pretrain/refcoco+_bert_base_6layer_6conect-pretrained/pytorch_model_19.bin --config_file vilbert/config/bert_base_6layer_6conect.json --task 4
+      CUDA_VISIBLE_DEVICES=0 python vilbert_eval_tasks.py --bert_model bert-base-uncased --task 4 
       # 测head=8
-      CUDA_VISIBLE_DEVICES=0 python vilbert_eval_tasks.py --bert_model bert-base-uncased --from_pretrained logs/refcoco+-bert_base_6layer_6conect-train/pytorch_model_2.bin --config_file vilbert/config/bert_base_6layer_6conect.json --task 4
+      --config_file vilbert/config/bert_base_6layer_6conect.json 
+      --from_pretrained ../refcoco+_bert_base_6layer_6conect-pretrained/pytorch_model_
+      # 测bi=48,v=32,t=48
+      --config_file vilbert/config/bert_base_6layer_6conect_bi32v32t48.json
+      --from_pretrained logs/refcoco+-bert_base_6layer_6conect_bi32v32t48-train/pytorch_model_3.bin
       ```
     
   - **基于标题的图像检索 Caption-Based Image Retrieval**

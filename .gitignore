@@ -11,6 +11,7 @@ example/
 
 
 # outputs
+!./logs/**/*.log
 outputs/
 logs/
 save/

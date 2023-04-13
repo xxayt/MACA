@@ -385,8 +385,9 @@ class BertSelfAttention(nn.Module):
                 "heads (%d)" % (config.hidden_size, config.num_attention_heads)
             )
         self.num_attention_heads = config.num_attention_heads
-        self.attention_head_size = int(config.hidden_size / config.num_attention_heads)
-        self.all_head_size = self.num_attention_heads * self.attention_head_size
+        self.attention_head_size = int(config.hidden_size / config.num_attention_heads) # 768/12=64
+        # 由于前面已经raise ValueError了整除问题, 所以这里 hidden_size = all_head_size
+        self.all_head_size = self.num_attention_heads * self.attention_head_size # 12*64=768
 
         self.query = nn.Linear(config.hidden_size, self.all_head_size)
         self.key = nn.Linear(config.hidden_size, self.all_head_size)
@@ -395,14 +396,17 @@ class BertSelfAttention(nn.Module):
         self.dropout = nn.Dropout(config.attention_probs_dropout_prob)
 
     def transpose_for_scores(self, x):
+        # [bs, seq_length, all_head_size] -> [bs, seq_length, num_attention_heads, attention_head_size]
         new_x_shape = x.size()[:-1] + (
             self.num_attention_heads,
             self.attention_head_size,
         )
-        x = x.view(*new_x_shape)
+        x = x.view(*new_x_shape)  # reshape操作拆头
+        # [bs, seq_length, num_attention_heads, attention_head_size] -> [bs, num_attention_heads, seq_length, attention_head_size]
         return x.permute(0, 2, 1, 3)
 
     def forward(self, hidden_states, attention_mask):
+        # 映射到实际总头数
         # [bs, seq_length, hidden_size] -> [bs, seq_length, all_head_size]
         mixed_query_layer = self.query(hidden_states)
         mixed_key_layer = self.key(hidden_states)
@@ -414,6 +418,8 @@ class BertSelfAttention(nn.Module):
 
         # Take the dot product between "query" and "key" to get the raw attention scores.
         # query点乘key得到attention score
+        # transpose: -> [bs, num_attention_heads, attention_head_size, seq_length]
+        # @: multiply -> [bs, num_attention_heads, seq_length, seq_length]
         attention_scores = torch.matmul(query_layer, key_layer.transpose(-1, -2))
         attention_scores = attention_scores / math.sqrt(self.attention_head_size)
         # Apply the attention mask is (precomputed for all layers in BertModel forward() function)
@@ -429,11 +435,12 @@ class BertSelfAttention(nn.Module):
         attention_probs = self.dropout(attention_probs)
         
         # attention score点乘value得到context
+        # @: multiply -> [bs, num_attention_heads, seq_length, attention_head_size]
         context_layer = torch.matmul(attention_probs, value_layer)
 
         # [bs, num_attention_heads, seq_length, attention_head_size] -> [bs, seq_length, num_attention_heads, attention_head_size]
         context_layer = context_layer.permute(0, 2, 1, 3).contiguous()
-        # [bs, seq_length, num_attention_heads, attention_head_size] -> [bs, seq_length, all_head_size]
+        # 合并多头[bs, seq_length, num_attention_heads, attention_head_size] -> [bs, seq_length, all_head_size]
         new_context_layer_shape = context_layer.size()[:-2] + (self.all_head_size,)
         context_layer = context_layer.view(*new_context_layer_shape)
         
@@ -525,8 +532,9 @@ class BertImageSelfAttention(nn.Module):
                 "heads (%d)" % (config.v_hidden_size, config.v_num_attention_heads)
             )
         self.num_attention_heads = config.v_num_attention_heads
-        self.attention_head_size = int(config.v_hidden_size / config.v_num_attention_heads)
-        self.all_head_size = self.num_attention_heads * self.attention_head_size
+        self.attention_head_size = int(config.v_hidden_size / config.v_num_attention_heads) # 1024/8=128
+        # 由于前面已经raise ValueError了整除问题, 所以这里 all_head_size = v_hidden_size
+        self.all_head_size = self.num_attention_heads * self.attention_head_size # 8*128=1024
 
         self.query = nn.Linear(config.v_hidden_size, self.all_head_size)
         self.key = nn.Linear(config.v_hidden_size, self.all_head_size)
@@ -535,23 +543,28 @@ class BertImageSelfAttention(nn.Module):
         self.dropout = nn.Dropout(config.v_attention_probs_dropout_prob)
 
     def transpose_for_scores(self, x):
+        # [bs, seq_length, all_head_size] -> [bs, seq_length, num_attention_heads, attention_head_size]
         new_x_shape = x.size()[:-1] + (
             self.num_attention_heads,
             self.attention_head_size,
         )
-        x = x.view(*new_x_shape)
+        x = x.view(*new_x_shape) # reshape
+        # [bs, seq_length, num_attention_heads, attention_head_size] -> [bs, num_attention_heads, seq_length, attention_head_size]
         return x.permute(0, 2, 1, 3)
 
     def forward(self, hidden_states, attention_mask):
+        # [bs, seq_length, v_hidden_size] -> [bs, seq_length, all_head_size]
         mixed_query_layer = self.query(hidden_states)
         mixed_key_layer = self.key(hidden_states)
         mixed_value_layer = self.value(hidden_states)
-
+        # [bs, seq_length, all_head_size] -> [bs, num_attention_heads, seq_length, attention_head_size]
         query_layer = self.transpose_for_scores(mixed_query_layer)
         key_layer = self.transpose_for_scores(mixed_key_layer)
         value_layer = self.transpose_for_scores(mixed_value_layer)
 
         # Take the dot product between "query" and "key" to get the raw attention scores.
+        # transpose: -> [bs, num_attention_heads, attention_head_size, seq_length]
+        # @: multiply -> [bs, num_attention_heads, seq_length, seq_length]
         attention_scores = torch.matmul(query_layer, key_layer.transpose(-1, -2))
         attention_scores = attention_scores / math.sqrt(self.attention_head_size)
         # Apply the attention mask is (precomputed for all layers in BertModel forward() function)
@@ -564,9 +577,13 @@ class BertImageSelfAttention(nn.Module):
         # seem a bit unusual, but is taken from the original Transformer paper.
         attention_probs = self.dropout(attention_probs)
 
+        # @: multiply -> [bs, num_attention_heads, seq_length, attention_head_size]
         context_layer = torch.matmul(attention_probs, value_layer)
+
+        # [bs, num_attention_heads, seq_length, attention_head_size] -> [bs, seq_length, num_attention_heads, attention_head_size]
         context_layer = context_layer.permute(0, 2, 1, 3).contiguous()
-        new_context_layer_shape = context_layer.size()[:-2] + (self.all_head_size,)
+        # [bs, seq_length, num_attention_heads, attention_head_size] -> [bs, seq_length, all_head_size]
+        new_context_layer_shape = context_layer.size()[:-2] + (self.all_head_size,)  # [:-2]表示切片到倒数第三个元素, 即[bs, seq_length]
         context_layer = context_layer.view(*new_context_layer_shape)
         
         return context_layer, attention_probs
@@ -661,110 +678,128 @@ class BertBiAttention(nn.Module):
             )
 
         self.num_attention_heads = config.bi_num_attention_heads
-        self.attention_head_size = int(
-            config.bi_hidden_size / config.bi_num_attention_heads
-        )
-        self.all_head_size = self.num_attention_heads * self.attention_head_size
-
-        # self.scale = nn.Linear(1, self.num_attention_heads, bias=False)
-        # self.scale_act_fn = ACT2FN['relu']
+        self.attention_head_size = int(config.bi_hidden_size / config.bi_num_attention_heads)  # 1024/8=128
+        # 由于前面已经raise ValueError了整除问题, 所以这里 bi_hidden_size = all_head_size
+        self.all_head_size = self.num_attention_heads * self.attention_head_size # 8*128=1024
 
         self.query1 = nn.Linear(config.v_hidden_size, self.all_head_size)
         self.key1 = nn.Linear(config.v_hidden_size, self.all_head_size)
         self.value1 = nn.Linear(config.v_hidden_size, self.all_head_size)
-        # self.logit1 = nn.Linear(config.hidden_size, self.num_attention_heads)
 
         self.dropout1 = nn.Dropout(config.v_attention_probs_dropout_prob)
 
         self.query2 = nn.Linear(config.hidden_size, self.all_head_size)
         self.key2 = nn.Linear(config.hidden_size, self.all_head_size)
         self.value2 = nn.Linear(config.hidden_size, self.all_head_size)
-        # self.logit2 = nn.Linear(config.hidden_size, self.num_attention_heads)
 
         self.dropout2 = nn.Dropout(config.attention_probs_dropout_prob)
 
+    # 拆分多头
     def transpose_for_scores(self, x):
+        # [bs, seq_length, all_head_size]
+        # -> [bs, seq_length, num_attention_heads, attention_head_size]
         new_x_shape = x.size()[:-1] + (
             self.num_attention_heads,
             self.attention_head_size,
         )
-        x = x.view(*new_x_shape)
-        return x.permute(0, 2, 1, 3)
+        x = x.view(*new_x_shape)  # 相当于reshape
+        # [bs, seq_length, num_attention_heads, attention_head_size]
+        # -> [bs, num_attention_heads, seq_length, attention_head_size]
+        x = x.transpose(1, 2)
+        return x
 
     def forward(self, input_tensor1, attention_mask1, input_tensor2, attention_mask2, co_attention_mask=None, use_co_attention_mask=False):
-        '''分别对image和text提取qkv
         '''
-        # for vision input.
+        分别对image和text提取q,k,v
+        '''
+        # 调整视觉特征输入维度
         # [bs, seq_length, v_hidden_size] -> [bs, seq_length, all_head_size]
         mixed_query_layer1 = self.query1(input_tensor1)
         mixed_key_layer1 = self.key1(input_tensor1)
         mixed_value_layer1 = self.value1(input_tensor1)
-        # mixed_logit_layer1 = self.logit1(input_tensor1)
+
+        # 为视觉特征拆分多头
         # [bs, seq_length, all_head_size] -> [bs, num_attention_heads, seq_length, attention_head_size]
         query_layer1 = self.transpose_for_scores(mixed_query_layer1)
         key_layer1 = self.transpose_for_scores(mixed_key_layer1)
         value_layer1 = self.transpose_for_scores(mixed_value_layer1)
-        # logit_layer1 = self.transpose_for_logits(mixed_logit_layer1)
 
-        # for text input:
+        # 调整文本特征输入维度
         # [bs, seq_length, hidden_size] -> [bs, seq_length, all_head_size]
         mixed_query_layer2 = self.query2(input_tensor2)
         mixed_key_layer2 = self.key2(input_tensor2)
         mixed_value_layer2 = self.value2(input_tensor2)
-        # mixed_logit_layer2 = self.logit2(input_tensor2)
+
+        # 为文本特征拆分多头
         # [bs, seq_length, all_head_size] -> [bs, num_attention_heads, seq_length, attention_head_size]
         query_layer2 = self.transpose_for_scores(mixed_query_layer2)
         key_layer2 = self.transpose_for_scores(mixed_key_layer2)
         value_layer2 = self.transpose_for_scores(mixed_value_layer2)
-        # logit_layer2 = self.transpose_for_logits(mixed_logit_layer2)
 
-        '''交换两模态query与对方模态key相乘
         '''
-        # Take the dot product between "query2" and "key1" to get the raw attention scores for value 1.
+        计算文本流的注意力
+        '''
         # query2点乘key1得到attention score1
+        # transpose: -> [bs, num_attention_heads, attention_head_size, seq_length]
+        # @: multiply -> [bs, num_attention_heads, seq_length, seq_length]
         attention_scores1 = torch.matmul(query_layer2, key_layer1.transpose(-1, -2))
         attention_scores1 = attention_scores1 / math.sqrt(self.attention_head_size)
         # 将attention mask1应用到attention score1上
         attention_scores1 = attention_scores1 + attention_mask1
 
+        # co_attention_mask: [bs, num_attention_heads, seq_length, seq_length]
         if use_co_attention_mask:
-            attention_scores1 = attention_scores1 + co_attention_mask.permute(0,1,3,2)
+            attention_scores1 = attention_scores1 + co_attention_mask.transpose(2, 3)
 
-        # Normalize the attention scores to probabilities.
         # 将attention score1转换为概率
         attention_probs1 = nn.Softmax(dim=-1)(attention_scores1)
-
-        # This is actually dropping out entire tokens to attend to, which might
-        # seem a bit unusual, but is taken from the original Transformer paper.
         attention_probs1 = self.dropout1(attention_probs1)
 
         # attention score1点乘value1得到context1
+        # @: multiply -> [bs, num_attention_heads, seq_length, attention_head_size]
         context_layer1 = torch.matmul(attention_probs1, value_layer1)
-        # [bs, num_attention_heads, seq_length, attention_head_size] -> [bs, seq_length, num_attention_heads, attention_head_size]
-        context_layer1 = context_layer1.permute(0, 2, 1, 3).contiguous()
+        
+        # 调换维度,准备合并多头
+        # [bs, num_attention_heads, seq_length, attention_head_size]
+        # -> [bs, seq_length, num_attention_heads, attention_head_size]
+        context_layer1 = context_layer1.transpose(1, 2).contiguous()
+        
+        # concat多头中的信息
         # [bs, seq_length, num_attention_heads, attention_head_size] -> [bs, seq_length, all_head_size]
         new_context_layer_shape1 = context_layer1.size()[:-2] + (self.all_head_size,)
         context_layer1 = context_layer1.view(*new_context_layer_shape1)
 
-        # Take the dot product between "query1" and "key2" to get the raw attention scores for value 2.
+        
+        '''
+        计算图像流的注意力
+        '''
+        # query1点乘key2得到attention score2
+        # transpose: -> [bs, num_attention_heads, attention_head_size, seq_length]
+        # @: multiply -> [bs, num_attention_heads, seq_length, seq_length]
         attention_scores2 = torch.matmul(query_layer1, key_layer2.transpose(-1, -2))
         attention_scores2 = attention_scores2 / math.sqrt(self.attention_head_size)
-        # Apply the attention mask is (precomputed for all layers in BertModel forward() function)
-
-        # we can comment this line for single flow. 
+        # 将attention mask2应用到attention score2上
         attention_scores2 = attention_scores2 + attention_mask2
+        
+        # co_attention_mask: [bs, num_attention_heads, seq_length, seq_length]
         if use_co_attention_mask:
             attention_scores2 = attention_scores2 + co_attention_mask
 
-        # Normalize the attention scores to probabilities.
+        # 将attention score2转换为概率
         attention_probs2 = nn.Softmax(dim=-1)(attention_scores2)
-
-        # This is actually dropping out entire tokens to attend to, which might
-        # seem a bit unusual, but is taken from the original Transformer paper.
         attention_probs2 = self.dropout2(attention_probs2)
 
+        # attention score2点乘value2得到context2
+        # @: multiply -> [bs, num_attention_heads, seq_length, attention_head_size]
         context_layer2 = torch.matmul(attention_probs2, value_layer2)
-        context_layer2 = context_layer2.permute(0, 2, 1, 3).contiguous()
+        
+        # 调换维度,准备合并多头
+        # [bs, num_attention_heads, seq_length, attention_head_size]
+        # -> [bs, seq_length, num_attention_heads, attention_head_size]
+        context_layer2 = context_layer2.transpose(1, 2).contiguous()
+        
+        # concat多头中的信息
+        # [bs, seq_length, num_attention_heads, attention_head_size] -> [bs, seq_length, all_head_size]
         new_context_layer_shape2 = context_layer2.size()[:-2] + (self.all_head_size,)
         context_layer2 = context_layer2.view(*new_context_layer_shape2)
 

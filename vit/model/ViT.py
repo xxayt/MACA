@@ -74,7 +74,7 @@ class Patch_Embedding(nn.Module):
 # 多头注意力机制模块
 class Attention(nn.Module):
     def __init__(self,
-                dim,   # 输入token的维度dim
+                dim,   # 输入token的维度dim=768
                 num_heads=8,  # head头数
                 qkv_bias=False,  # 求qkv时是否加偏置
                 qk_scale=None,
@@ -83,43 +83,57 @@ class Attention(nn.Module):
         super(Attention, self).__init__()
         self.num_heads = num_heads
         head_dim = dim // num_heads  # 每个head的qkv对应的维度
-        self.scale = qk_scale or head_dim ** -0.5  # Attention公式的系数中 \dfr{1}{\sqrt{d}}
+        self.scale = qk_scale or head_dim ** -0.5  # Attention公式的缩放参数
         self.qkv = nn.Linear(dim, dim * 3, bias=qkv_bias)  # 使用全连接层得到qkv
         self.attn_drop = nn.Dropout(attn_drop_ratio)
         self.proj = nn.Linear(dim, dim)  # Wo：最后得到结果进行拼接，使用Wo进行映射
         self.proj_drop = nn.Dropout(proj_drop_ratio)
 
     def forward(self, x):
-        # [batch_size, num_patches + 1, total_embed_dim]
+        '''
+        在vit中,若固定图片大小H=W=224,patch大小P=16
+        则计算num_patches为N=HW/P^2=196, total_embed_dim为C=P^2*3=768
+        若头数为8,则embed_dim_per_head=768/8=96
+        '''
+        # [bz, num_patches + 1, total_embed_dim]
         B, N, C = x.shape
-        # qkv(): -> [batch_size, num_patches + 1, 3 * total_embed_dim]
+        # qkv(): -> [bz, num_patches + 1, 3 * total_embed_dim]
         qkv = self.qkv(x)
-        # reshape: -> [batch_size, num_patches + 1, 3, num_heads, embed_dim_per_head]
+        
+        # 拆分多头
+        # reshape: -> [bz, num_patches + 1, 3, num_heads, embed_dim_per_head]
         qkv = qkv.reshape(B, N, 3, self.num_heads, C // self.num_heads)
-        # 调整数据维度顺序
-        # permute: -> [3, batch_size, num_heads, num_patches + 1, embed_dim_per_head]
+        
+        # 调整数据维度顺序(为了拆分成q,k,v三个向量,并使num_heads到第二维度,方便多头并行计算)
+        # permute: -> [3, bz, num_heads, num_patches + 1, embed_dim_per_head]
         qkv = qkv.permute(2, 0, 3, 1, 4)
-        # 通过切片拆分成qkv
-        # [batch_size, num_heads, num_patches + 1, embed_dim_per_head]
-        q, k, v = qkv[0], qkv[1], qkv[2]  # make torchscript happy (cannot use tensor as tuple)
+        
+        # 通过切片，从第一维拆分成q,k,v三个向量
+        # q,k,v: -> [bz, num_heads, num_patches + 1, embed_dim_per_head]
+        q, k, v = qkv[0], qkv[1], qkv[2]
+
+        
         '''
-        Attention公式: \text{softmax}(\dfrac{QK^T}{\sqrt{d_k}})V
+        计算注意力机制
         '''
-        # 后两个维度进行调换
-        # transpose: -> [batch_size, num_heads, embed_dim_per_head, num_patches + 1]
-        # 矩阵乘法@: 只对后两个维度进行矩阵乘法
-        # @: multiply -> [batch_size, num_heads, num_patches + 1, num_patches + 1]
+        # transpose: -> [bz, num_heads, embed_dim_per_head, num_patches + 1]
+        # 矩阵乘法@: 在[bz, num_heads]相同的子空间, 只对后两个维度进行矩阵乘法
+        # @: multiply -> [bz, num_heads, num_patches + 1, num_patches + 1]
         attn = (q @ k.transpose(-2, -1)) * self.scale
         # dim=-1: 针对每行进行softmax操作
         attn = attn.softmax(dim=-1)
         attn = self.attn_drop(attn)
-        # @: multiply -> [batch_size, num_heads, num_patches + 1, embed_dim_per_head]
+        
+        # @: multiply -> [bz, num_heads, num_patches + 1, embed_dim_per_head]
         x = (attn @ v)
-        # transpose: -> [batch_size, num_patches + 1, num_heads, embed_dim_per_head]
+        
+        # 调换维度,准备合并多头
+        # transpose: -> [bz, num_patches + 1, num_heads, embed_dim_per_head]
         x = x.transpose(1, 2)
-        # 拼接多头中最后两个维度的信息
-        # reshape: -> [batch_size, num_patches + 1, total_embed_dim]
+        # concat多头中的信息
+        # reshape: -> [bz, num_patches + 1, total_embed_dim]
         x = x.reshape(B, N, C)
+        
         # 全连接层进行映射
         x = self.proj(x)
         x = self.proj_drop(x)

@@ -238,7 +238,7 @@ tree only for ViLBERT
       --config_file vilbert/config/bert_base_6layer_6conect.json  --learning_rate 4e-5 --num_workers 0 \
       --tasks 4
       ```
-      try different head_num
+      train: 我的训练 to try different head_num
       ```
       CUDA_VISIBLE_DEVICES=0 python vilbert_train_tasks.py --bert_model bert-base-uncased \
       --from_pretrained vilbert/pretrain/bert_base_6_layer_6_connect_freeze_0/pytorch_model_8.bin --learning_rate 4e-5 --num_workers 0 --tasks 4 
@@ -252,6 +252,10 @@ tree only for ViLBERT
       --config_file vilbert/config/bert_base_6layer_6conect_thead48.json
       # bi32v32t48
       --config_file vilbert/config/bert_base_6layer_6conect_bi32v32t48.json
+      # thead3
+      --config_file vilbert/config/bert_base_6layer_6conect_thead3.json
+      # vhead2
+      --config_file vilbert/config/bert_base_6layer_6conect_vhead2.json
       ```
 
     - evaluation: 用源代码已有模型测试

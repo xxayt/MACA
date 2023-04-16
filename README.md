@@ -23,7 +23,7 @@ I mainly discuss **the influence of Multi-Head Attention in Cross-Modal Transfor
 
 # Theory
 
-Check [Q&A](./Q&A.md) for more details, pay attention to **3.2 Transformer in MultiModel task**
+Check [Q&A](./Q&A.pdf) for more details, pay attention to **3.2 Transformer in MultiModel task**
 
 # Experiment
 
@@ -140,6 +140,7 @@ tree only for ViT
   
   - cifar100
     - dataset：[cifar100](http://www.cs.toronto.edu/~kriz/cifar-100-python.tar.gz)
+    
     - train for vit_base_patch32_224_ImageNet21k
       ```
       python vit_train.py --name vit_base_32 --data 'cifar100' --model_file 'model_ViT' \
@@ -152,7 +153,13 @@ tree only for ViT
       --model_name 'vit_large_patch16_224_ImageNet21k' --pretrain 'vit_large_patch16_224_in21k.pth' \
       --batch_size 32 --lr 0.004
       ```
+      
     - test
+    
+    |         model          | src paper |  me   |
+    | :--------------------: | :-------: | :---: |
+    | ViT-B/32 (ImageNet21k) |   91.97   | 91.82 |
+    | ViT-L/16 (ImageNet21k) |   93.25   | 93.27 |
 
 ### 2 ViLBERT
 
@@ -174,6 +181,33 @@ tree only for ViLBERT
 
   <img src=".\image\vilbert.png" alt="vilbert" style="zoom:50%;" />
 
+  ```python
+  '''Co-Attention
+  '''
+  # Take the dot product between "query2" and "key1" to get the raw attention scores for value 1.
+  attention_scores1 = torch.matmul(query_layer2, key_layer1.transpose(-1, -2))
+  attention_scores1 = attention_scores1 / math.sqrt(self.attention_head_size)
+  
+  if use_co_attention_mask:
+      attention_scores1 = attention_scores1 + co_attention_mask.permute(0,1,3,2)
+  
+  # Normalize the attention scores to probabilities.
+  attention_probs1 = nn.Softmax(dim=-1)(attention_scores1)
+  
+  # This is actually dropping out entire tokens to attend to, which might
+  # seem a bit unusual, but is taken from the original Transformer paper.
+  attention_probs1 = self.dropout1(attention_probs1)
+  
+  context_layer1 = torch.matmul(attention_probs1, value_layer1)
+  # [bs, num_attention_heads, seq_length, attention_head_size] -> [bs, seq_length, num_attention_heads, attention_head_size]
+  context_layer1 = context_layer1.permute(0, 2, 1, 3).contiguous()
+  # [bs, seq_length, num_attention_heads, attention_head_size] -> [bs, seq_length, all_head_size]
+  new_context_layer_shape1 = context_layer1.size()[:-2] + (self.all_head_size,)
+  context_layer1 = context_layer1.view(*new_context_layer_shape1)
+  ```
+  
+  
+  
 - **Pre-Training Tasks**：
   
   1. masked multi-modal modelling
@@ -204,7 +238,7 @@ tree only for ViLBERT
       --config_file vilbert/config/bert_base_6layer_6conect.json  --learning_rate 4e-5 --num_workers 0 \
       --tasks 4
       ```
-      try different head_num
+      train: 我的训练 to try different head_num
       ```
       CUDA_VISIBLE_DEVICES=0 python vilbert_train_tasks.py --bert_model bert-base-uncased \
       --from_pretrained vilbert/pretrain/bert_base_6_layer_6_connect_freeze_0/pytorch_model_8.bin --learning_rate 4e-5 --num_workers 0 --tasks 4 
@@ -218,6 +252,10 @@ tree only for ViLBERT
       --config_file vilbert/config/bert_base_6layer_6conect_thead48.json
       # bi32v32t48
       --config_file vilbert/config/bert_base_6layer_6conect_bi32v32t48.json
+      # thead3
+      --config_file vilbert/config/bert_base_6layer_6conect_thead3.json
+      # vhead2
+      --config_file vilbert/config/bert_base_6layer_6conect_vhead2.json
       ```
 
     - evaluation: 用源代码已有模型测试
@@ -247,23 +285,27 @@ tree only for ViLBERT
       --from_pretrained logs/refcoco+-bert_base_6layer_6conect_bi32v32t48-train/pytorch_model_3.bin
       ```
     
-    | .json | Co_Att_Heads | Image_Att_Heads | Text_Att_Heads |                  valid(max)                  |            eval            | .log |
-    | :---: | :----------: | :-------------: | :------------: | :------------------------------------------: | :------------------------: | :--: |
-    |       |      2       |        8        |       12       |                66.453(2.bin)                 |           68.507           |      |
-    |  scr  |      8       |        8        |       12       |                 68.49(2.bin)                 |       68.507(2.bin)        |      |
-    |       |      32      |        8        |       12       |             68.24(4.bin)突然下降             |           68.247           |      |
-    |       |      8       |       32        |       12       | 68.19(1.bin)68.14(4.bin)61.07(7.bin)突然下降 | 68.210(1.bin)68.135(4.bin) |      |
-    |       |      8       |        8        |       48       |           67.57(2.bin)67.38(3.bin)           |       67.578(2.bin)        |      |
-    |       |      32      |       32        |       48       |           67.066(2.bin)68.2(3.bin)           |  67.048(2.bin)68.2(3.bin)  |      |
+    | .json | Co_Att_Heads | Image_Att_Heads | Text_Att_Heads |                          valid(max)                          |                 eval                  | .log |
+    | :---: | :----------: | :-------------: | :------------: | :----------------------------------------------------------: | :-----------------------------------: | :--: |
+    |       |      2       |        8        |       12       |                        66.453(2.bin)                         |             66.453(2.bin)             |      |
+    |  scr  |      8       |        8        |       12       |                         68.49(2.bin)                         |             68.507(2.bin)             |      |
+    |       |      2       |        8        |       12       |                  69.576(3.bin)69.79(5.bin)                   |                                       |      |
+    |       |      32      |        8        |       12       |                     68.24(4.bin)突然下降                     |             68.247(4.bin)             |      |
+    |       |      8       |        8        |       3        | 68.823(3.bin)68.777(4.bin)68.86(5.bin)69.01(6.bin)69.36(8.bin) |                                       |      |
+    |       |      8       |       32        |       12       |         68.19(1.bin)68.14(4.bin)61.07(7.bin)突然下降         |      68.210(1.bin)68.135(4.bin)       |      |
+    |       |      8       |        8        |       48       |                   67.57(2.bin)67.38(3.bin)                   |             67.578(2.bin)             |      |
+    |       |      32      |       32        |       48       |             67.066(2.bin)68.2(3.bin)68.05(4.bin)             | 67.048(2.bin)68.2(3.bin)68.033(4.bin) |      |
     
-    | .json file  | Co_Att_Heads | Image_Att_Heads | Text_Att_Heads |    valid(max)     |     eval      | .log file |
-    | :---------: | :----------: | :-------------: | :------------: | :---------------: | :-----------: | :-------: |
-    |     scr     |      8       |        8        |       12       |       68.49       | 68.507(2.bin) |           |
-    |  _bihead2   |      2       |        -        |       -        | 66.45 **(-2.04)** |               |           |
-    |  _bihead32  |      32      |        -        |       -        |   68.24 (-0.25)   |    68.247     |           |
-    |  _vhead32   |      -       |       32        |       -        |   68.19 (-0.3)    |    68.210     |           |
-    |  _thead48   |      -       |        -        |       48       | 67.57 **(-0.92)** |    67.578     |           |
-    | _bi32v32t48 |      32      |       32        |       48       |   68.2 (-0.29)    |  68.2(3.bin)  |           |
+    | .json file  | Co_Att_Heads | Image_Att_Heads | Text_Att_Heads |        valid(max)        |
+    | :---------: | :----------: | :-------------: | :------------: | :----------------------: |
+    |     scr     |      8       |        8        |       12       | 68.49(me) / 68.61(paper) |
+    |  _bihead2   |      2       |        -        |       -        |    66.45 **(-2.04)**     |
+    |  _bihead32  |      32      |        -        |       -        |      68.24 (-0.25)       |
+    |   _vhead2   |      -       |        2        |       -        |     69.79 (**+1.3**)     |
+    |  _vhead32   |      -       |       32        |       -        |       68.19 (-0.3)       |
+    |   _thead3   |      -       |        -        |       3        |    69.36 (**+0.87**)     |
+    |  _thead48   |      -       |        -        |       48       |    67.57 **(-0.92)**     |
+    | _bi32v32t48 |      32      |       32        |       48       |       68.2 (-0.29)       |
     
   - **基于标题的图像检索 Caption-Based Image Retrieval**
     
